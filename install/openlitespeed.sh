@@ -306,7 +306,7 @@ chown -R lsadm:nogroup /usr/local/lsws/conf/vhosts/Example
 
 # ─── OpenDKIM for email authentication ────────
 proses "Menginstall OpenDKIM..."
-apt-get install -y opendkim opendkim-tools >> "$LOG_FILE" 2>&1 || warn "OpenDKIM tidak tersedia di repository"
+timeout 60 apt-get install -y -qq opendkim opendkim-tools >> "$LOG_FILE" 2>&1 || warn "OpenDKIM tidak tersedia atau timeout"
 
 if command -v opendkim &>/dev/null; then
     mkdir -p /etc/opendkim/keys
