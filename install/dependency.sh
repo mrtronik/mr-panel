@@ -11,7 +11,7 @@ export DEBIAN_FRONTEND=noninteractive
 proses "Memperbarui Paket Sistem"
 titik "Memperbarui Paket Sistem"
 apt-get update -qq >> "$LOG_FILE" 2>&1
-apt-get upgrade -y -qq >> "$LOG_FILE" 2>&1
+apt-get upgrade -y -qq >> "$LOG_FILE" 2>&1 || true
 sukses "Paket Sistem Berhasil Diperbarui"
 # ─── Essential packages ───────────────────────
 proses "Menginstall Paket Yang Diperlukan"
