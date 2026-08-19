@@ -201,8 +201,6 @@ api=yes
 api-key=${PDNS_API_KEY}
 
 # Security
-default-soa-name=ns1
-default-soa-mail=admin
 PDNSEOF
 
 # Remove BIND9 config conflict if exists

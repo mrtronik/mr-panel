@@ -383,7 +383,7 @@ This project is licensed under the **ISC License**.
 
 ## 🙏 Credits
 
-Built with ❤️ by **MR Studio**
+Built with ❤️ by **MR Projects**
 
 - [OpenLiteSpeed](https://openlitespeed.org/) — High-performance web server
 - [PowerDNS](https://www.powerdns.com/) — Authoritative DNS server
@@ -404,6 +404,6 @@ Built with ❤️ by **MR Studio**
 
 **⭐ Star this repo if you find it useful!**
 
-Made with ☕ and 💪 by MR Studio
+Made with ☕ and 💪 by MR Projects 
 
 </div>
