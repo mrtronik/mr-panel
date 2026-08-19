@@ -1,0 +1,161 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Backups</span></div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div>
+      <h1><i class="fa-solid fa-cloud-arrow-down"></i> Backups</h1>
+      <p class="subtitle">Backup and restore your websites.</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <a href="/settings/backup" class="btn-primary-soft" style="text-decoration:none;display:inline-flex;align-items:center">
+        <i class="fa-brands fa-google"></i> Google Drive Backup
+      </a>
+      <button class="btn-primary-soft" data-bs-toggle="modal" data-bs-target="#newBackupModal">
+        <i class="fa-solid fa-plus"></i> New Backup
+      </button>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card-soft p-3 text-center">
+        <div style="font-size:2rem;font-weight:700;color:var(--accent)" id="bkTotal">0</div>
+        <div style="font-size:0.82rem;color:var(--text-muted)">Total Backups</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-soft p-3 text-center">
+        <div style="font-size:2rem;font-weight:700;color:#22c55e" id="bkCompleted">0</div>
+        <div style="font-size:0.82rem;color:var(--text-muted)">Completed</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-soft p-3 text-center">
+        <div style="font-size:2rem;font-weight:700;color:#3b82f6" id="bkSize">0 B</div>
+        <div style="font-size:0.82rem;color:var(--text-muted)">Total Size</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-soft">
+    <div class="card-body">
+      <table class="table table-hover table-sm mb-0" style="font-size:0.85rem">
+        <thead><tr><th>Domain</th><th>Type</th><th>Size</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody id="backupList"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal fade" id="newBackupModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-cloud-arrow-down"></i> New Backup</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Domain</label>
+            <select class="form-select" id="bkDomain" required>
+              <option value="">-- Select Domain --</option>
+              <% websites.forEach(function(site) { %>
+                <option value="<%= site.domain %>"><%= site.domain %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Backup Type</label>
+            <select class="form-select" id="bkType">
+              <option value="full">Full (Files + Database)</option>
+              <option value="files">Files Only</option>
+              <option value="database">Database Only</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" onclick="createBackup()"><i class="fa-solid fa-download"></i> Start Backup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function loadBackups() {
+  fetch('/api/backups/list', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    if (!d.success) return;
+    var html = '';
+    d.backups.forEach(function(b) {
+      var statusBadge = b.status === 'completed' ? '<span class="badge bg-success">Completed</span>' : b.status === 'running' ? '<span class="badge bg-warning">Running</span>' : '<span class="badge bg-danger">Failed</span>';
+      var typeBadge = b.type === 'full' ? '<span class="badge bg-primary">Full</span>' : b.type === 'files' ? '<span class="badge bg-info">Files</span>' : '<span class="badge bg-secondary">DB</span>';
+      var size = formatBytes(b.file_size || 0);
+      var date = new Date(b.created_at).toLocaleString();
+      html += '<tr>';
+      html += '<td><strong>' + b.domain + '</strong></td>';
+      html += '<td>' + typeBadge + '</td>';
+      html += '<td>' + size + '</td>';
+      html += '<td>' + statusBadge + '</td>';
+      html += '<td>' + date + '</td>';
+      html += '<td class="d-flex gap-1">';
+      if (b.status === 'completed') {
+        html += '<a href="/api/backups/download/' + b.id + '" class="btn btn-xs btn-outline-primary"><i class="fa-solid fa-download"></i></a>';
+        html += '<button class="btn btn-xs btn-outline-success" onclick="restoreBackup(' + b.id + ')"><i class="fa-solid fa-rotate-left"></i></button>';
+      }
+      html += '<button class="btn btn-xs btn-outline-danger" onclick="deleteBackup(' + b.id + ')"><i class="fa-solid fa-trash"></i></button>';
+      html += '</td></tr>';
+    });
+    if (d.backups.length === 0) html = '<tr><td colspan="6" class="text-center" style="padding:30px;color:var(--text-light)">No backups yet</td></tr>';
+    document.getElementById('backupList').innerHTML = html;
+  }).catch(function(){});
+}
+
+function loadStats() {
+  fetch('/api/backups/stats', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    if (!d.success) return;
+    document.getElementById('bkTotal').textContent = d.total;
+    document.getElementById('bkCompleted').textContent = d.completed;
+    document.getElementById('bkSize').textContent = d.totalFormatted;
+  });
+}
+
+function createBackup() {
+  var domain = document.getElementById('bkDomain').value;
+  var type = document.getElementById('bkType').value;
+  if (!domain) { whpToast('Error', 'Select a domain', 'error'); return; }
+  var modal = bootstrap.Modal.getInstance(document.getElementById('newBackupModal'));
+  modal.hide();
+  whpToast('Backup Started', 'Creating ' + type + ' backup for ' + domain + '...', 'info');
+  fetch('/api/backups/create', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain:domain,type:type}),credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){whpToast('Backup Complete',d.backup.filename,'success');loadBackups();loadStats()}
+    else whpToast('Error',d.error,'error');
+  });
+}
+
+function restoreBackup(id) {
+  if (!confirm('Restore this backup? Current files will be overwritten!')) return;
+  fetch('/api/backups/restore/' + id, {method:'POST',credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success) whpToast('Restored','','success');
+    else whpToast('Error',d.error,'error');
+  });
+}
+
+function deleteBackup(id) {
+  if (!confirm('Delete this backup?')) return;
+  fetch('/api/backups/delete/' + id, {method:'DELETE',credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){whpToast('Deleted','','success');loadBackups();loadStats()}
+    else whpToast('Error',d.error,'error');
+  });
+}
+
+function formatBytes(b) {
+  if (b === 0) return '0 B';
+  var k = 1024, s = ['B','KB','MB','GB','TB'];
+  var i = Math.floor(Math.log(b) / Math.log(k));
+  return (b / Math.pow(k, i)).toFixed(2) + ' ' + s[i];
+}
+
+loadBackups();
+loadStats();
+</script>

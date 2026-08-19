@@ -1,0 +1,84 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Users</span></div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div><h1>User Management</h1><p class="subtitle">Manage panel users and their access levels.</p></div>
+    <a href="/users/add" class="btn-primary-soft"><i class="fa-solid fa-user-plus"></i> Add User</a>
+  </div>
+
+  <div class="card-soft">
+    <div class="card-head"><h3>All Users</h3></div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table-soft">
+          <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Package</th><th>Status</th><th>Last Login</th><th style="width:120px">Actions</th></tr></thead>
+          <tbody>
+            <% users.forEach(function(u) { %>
+            <tr>
+              <td><strong><%= u.name %></strong></td>
+              <td><%= u.username %></td>
+              <td><%= u.email %></td>
+              <td>
+                <% if (u.role === 'admin') { %>
+                  <span class="badge-soft danger">Admin</span>
+                <% } else if (u.role === 'reseller') { %>
+                  <span class="badge-soft info">Reseller</span>
+                <% } else { %>
+                  <span class="badge-soft success">User</span>
+                <% } %>
+              </td>
+              <td><%= u.package_name || '-' %></td>
+              <td>
+                <% if (u.status === 'active') { %>
+                  <span class="badge-soft success">Active</span>
+                <% } else { %>
+                  <span class="badge-soft warning"><%= u.status %></span>
+                <% } %>
+              </td>
+              <td><small style="color:var(--text-muted)"><%= u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never' %></small></td>
+              <td>
+                <a href="/users/<%= u.id %>/edit" class="act-icon" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                <% if (u.status === 'active' && u.role !== 'admin') { %>
+                <form action="/users/<%= u.id %>/suspend" method="POST" class="d-inline"><button type="submit" class="act-icon" title="Suspend"><i class="fa-solid fa-pause"></i></button></form>
+                <% } else if (u.status === 'suspended') { %>
+                <form action="/users/<%= u.id %>/activate" method="POST" class="d-inline"><button type="submit" class="act-icon" title="Activate"><i class="fa-solid fa-play"></i></button></form>
+                <% } %>
+                <% if (u.role !== 'admin') { %>
+                <button type="button" class="act-icon danger" title="Delete" onclick="event.stopPropagation(); confirmDeleteUser(<%= u.id %>, '<%= u.username %>')"><i class="fa-solid fa-trash"></i></button>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function confirmDeleteUser(id, username) {
+    whpConfirm('Delete?', 'Delete user <strong>' + username + '</strong>? This cannot be undone.', function() {
+        var f = document.createElement('form');
+        f.method = 'POST';
+        f.action = '/users/' + id + '/delete';
+        document.body.appendChild(f);
+        f.submit();
+    });
+}
+
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('deleted') === '1') {
+        whpToast('Deleted', 'User has been removed.', 'success');
+        history.replaceState(null, '', '/users');
+    }
+    if (params.get('suspended') === '1') {
+        whpToast('Suspended', 'User has been suspended.', 'success');
+        history.replaceState(null, '', '/users');
+    }
+    if (params.get('activated') === '1') {
+        whpToast('Activated', 'User has been activated.', 'success');
+        history.replaceState(null, '', '/users');
+    }
+})();
+</script>

@@ -1,0 +1,335 @@
+<section class="page-content">
+  <div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h4 class="mb-1 fw-bold"><i class="fa-solid fa-gear me-2"></i>System Settings</h4>
+        <p class="text-muted mb-0">Configure global panel settings, nameservers, and integrations</p>
+      </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-4" id="settingsTabs" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabGeneral" type="button">
+          <i class="fa-solid fa-sliders me-1"></i> General
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDns" type="button">
+          <i class="fa-solid fa-earth-americas me-1"></i> DNS / Nameservers
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabPanel" type="button">
+          <i class="fa-solid fa-shield-halved me-1"></i> Panel HTTPS
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabWhmcs" type="button">
+          <i class="fa-solid fa-plug me-1"></i> WHMCS Integration
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <!-- General Tab -->
+      <div class="tab-pane fade show active" id="tabGeneral">
+        <div class="card-soft p-4">
+          <h6 class="mb-3 fw-bold"><i class="fa-solid fa-server me-2"></i>Panel Identity</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label-soft">Panel Name</label>
+              <input type="text" class="form-soft" id="sAppName" value="<%= settings.app_name || 'MR Panel' %>" placeholder="MR Panel">
+              <div class="form-hint">Displayed in sidebar, login page, and footer</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-soft">Panel URL</label>
+              <input type="url" class="form-soft" id="sAppUrl" value="<%= settings.app_url || '' %>" placeholder="https://panel.example.com:1708">
+              <div class="form-hint">Full URL including port (e.g. https://panel.example.com:1708)</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-soft">Server IP</label>
+              <div class="input-group">
+                <input type="text" class="form-soft" id="sServerIp" value="<%= settings.server_ip || '' %>" placeholder="103.191.63.147">
+                <button class="btn-ghost" type="button" onclick="detectIp()" id="btnDetectIp" style="border-left:1px solid var(--border-color);white-space:nowrap">
+                  <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Detect
+                </button>
+              </div>
+              <div class="form-hint">Auto-detect public IP or enter manually</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DNS Tab -->
+      <div class="tab-pane fade" id="tabDns">
+        <div class="card-soft p-4">
+          <h6 class="mb-3 fw-bold"><i class="fa-solid fa-earth-americas me-2"></i>Default Nameservers</h6>
+          <div class="alert alert-info py-2 px-3 mb-3" style="border-radius:8px;font-size:0.85rem">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            These nameservers are auto-added when creating new websites. Users can customize per-domain in DNS Manager.
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label-soft">NS1 (Primary)</label>
+              <input type="text" class="form-soft" id="sNs1" value="<%= settings.ns1 || '' %>" placeholder="ns1.example.com">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-soft">NS2 (Secondary)</label>
+              <input type="text" class="form-soft" id="sNs2" value="<%= settings.ns2 || '' %>" placeholder="ns2.example.com">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel HTTPS Tab -->
+      <div class="tab-pane fade" id="tabPanel">
+        <div class="card-soft p-4">
+          <h6 class="mb-3 fw-bold"><i class="fa-solid fa-shield-halved me-2"></i>Panel HTTPS (Port 1708)</h6>
+          <div class="alert alert-info py-2 px-3 mb-3" style="border-radius:8px;font-size:0.85rem">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Set your panel domain to serve HTTPS on the same port (1708), like cPanel&apos;s port 2083.
+            You must first point the domain to this server via an A record at your DNS provider.
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label-soft">Panel Domain</label>
+              <div class="input-group">
+                <input type="text" class="form-soft" id="sPanelDomain" value="<%= settings.panel_domain || '' %>" placeholder="panel.example.com">
+                <button class="btn-ghost" type="button" onclick="setupPanelSsl()" id="btnPanelSsl" style="border-left:1px solid var(--border-color);white-space:nowrap">
+                  <i class="fa-solid fa-lock me-1"></i> Enable HTTPS
+                </button>
+              </div>
+              <div class="form-hint">A record for this domain must point to <%= settings.server_ip || 'your server IP' %></div>
+            </div>
+            <div class="col-md-6" id="panelSslStatusWrap">
+              <label class="form-label-soft">Status</label>
+              <div id="panelSslStatus" class="p-2 rounded" style="background:var(--bg-soft);font-size:0.85rem">
+                <i class="fa-solid fa-spinner fa-spin me-1"></i> Checking...
+              </div>
+            </div>
+          </div>
+          <div class="mt-3">
+            <span id="enableInfo" class="text-muted" style="font-size:0.85rem"></span>
+          </div>
+          <div class="mt-3">
+            <button class="btn-ghost" type="button" onclick="disablePanelSsl()" id="btnPanelSslDisable" style="display:none">
+              <i class="fa-solid fa-unlock me-1"></i> Disable HTTPS
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WHMCS Tab -->
+      <div class="tab-pane fade" id="tabWhmcs">
+        <div class="card-soft p-4">
+          <h6 class="mb-3 fw-bold"><i class="fa-solid fa-plug me-2"></i>WHMCS API Credentials</h6>
+          <div class="alert alert-info py-2 px-3 mb-3" style="border-radius:8px;font-size:0.85rem">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            API key and secret for WHMCS module authentication. Each panel instance can have unique credentials.
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label-soft">API Key</label>
+              <input type="text" class="form-soft" id="sWhmcsKey" value="<%= settings.whmcs_api_key || '' %>" placeholder="mrpanel-whmcs-key">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-soft">API Secret</label>
+              <input type="password" class="form-soft" id="sWhmcsSecret" value="<%= settings.whmcs_api_secret || '' %>" placeholder="mrpanel-whmcs-secret">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-soft">JWT Secret</label>
+              <div class="input-group">
+                <input type="password" class="form-soft" id="sWhmcsJwt" value="<%= settings.whmcs_jwt_secret || '' %>" placeholder="mrpanel-whmcs-jwt-secret">
+                <button class="btn-ghost" type="button" onclick="generateJwt()" style="border-left:1px solid var(--border-color);white-space:nowrap">
+                  <i class="fa-solid fa-dice me-1"></i> Generate
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3">
+            <h6 class="fw-bold mb-2">SSO URL (for WHMCS module)</h6>
+            <code class="d-block p-2 rounded" style="background:var(--bg-soft);font-size:0.82rem;word-break:break-all" id="ssoUrlPreview"></code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button class="btn-primary-soft" onclick="saveSystemSettings()">
+        <i class="fa-solid fa-check me-1"></i> Save Settings
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+(function() {
+    const appUrl = document.getElementById('sAppUrl');
+    const preview = document.getElementById('ssoUrlPreview');
+    function updateSsoPreview() {
+        const base = appUrl.value.replace(/\/+$/, '');
+        preview.textContent = base + '/auth/whmcs?token=<JWT_TOKEN>';
+    }
+    appUrl.addEventListener('input', updateSsoPreview);
+    updateSsoPreview();
+})();
+
+function detectIp() {
+    const btn = document.getElementById('btnDetectIp');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Detecting...';
+
+    fetch('/api/system-settings/detect-ip')
+        .then(r => r.json())
+        .then(res => {
+            if (res.success && res.ip) {
+                document.getElementById('sServerIp').value = res.ip;
+                whpToast('IP detected: ' + res.ip, 'success');
+            } else {
+                whpToast(res.error || 'Failed to detect IP', 'error');
+            }
+        })
+        .catch(err => whpToast('Error: ' + err.message, 'error'))
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles me-1"></i> Detect';
+        });
+}
+
+function generateJwt() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 64; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('sWhmcsJwt').value = result;
+    document.getElementById('sWhmcsJwt').type = 'text';
+    whpToast('JWT Secret generated (64 chars)', 'success');
+}
+
+function loadPanelSslStatus() {
+    fetch('/api/system-settings/panel-ssl-status')
+        .then(r => r.json())
+        .then(res => {
+            const el = document.getElementById('panelSslStatus');
+            const info = document.getElementById('enableInfo');
+            const disableBtn = document.getElementById('btnPanelSslDisable');
+
+            if (res.enabled && res.domain) {
+                const cert = res.cert || {};
+                el.innerHTML = cert.installed
+                    ? '<i class="fa-solid fa-circle-check text-success me-1"></i> <strong>HTTPS Enabled</strong> — ' + res.domain + ' (expires ' + cert.expiry + ')'
+                    : '<i class="fa-solid fa-circle-exclamation text-warning me-1"></i> <strong>HTTPS configured but cert not issued</strong> — ' + res.domain;
+                info.innerHTML = 'Access panel via <code>https://' + res.domain + ':1708</code>';
+                disableBtn.style.display = 'inline-flex';
+            } else {
+                el.innerHTML = '<i class="fa-solid fa-circle-xmark text-muted me-1"></i> HTTPS disabled';
+                info.innerHTML = 'Panel runs on HTTP. Add a domain and click Enable HTTPS.';
+                disableBtn.style.display = 'none';
+            }
+        })
+        .catch(() => {
+            document.getElementById('panelSslStatus').innerHTML = '<i class="fa-solid fa-circle-exclamation text-danger me-1"></i> Status unavailable';
+        });
+}
+
+function setupPanelSsl() {
+    const domain = document.getElementById('sPanelDomain').value.trim().toLowerCase()
+        .replace(/^https?:\/\//, '').replace(/:\d+$/, '');
+    if (!domain) {
+        whpToast('Enter a panel domain first', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btnPanelSsl');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Setting up (may take 1-2 min)...';
+    document.getElementById('enableInfo').innerHTML = 'Requesting certificate from Let\'s Encrypt...';
+
+    fetch('/api/system-settings/panel-ssl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            whpToast('HTTPS enabled on :1708! App will restart to serve HTTPS.', 'success');
+            loadPanelSslStatus();
+        } else {
+            whpToast('Setup failed: ' + (res.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(err => whpToast('Error: ' + err.message, 'error'))
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Enable HTTPS';
+    });
+}
+
+function disablePanelSsl() {
+    whpConfirm('Disable HTTPS?', 'The panel will fall back to HTTP on port 1708.', function() {
+        fetch('/api/system-settings/panel-ssl-disable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                whpToast('HTTPS disabled. App will restart to serve HTTP.', 'success');
+                loadPanelSslStatus();
+            } else {
+                whpToast('Failed: ' + (res.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(err => whpToast('Error: ' + err.message, 'error'));
+    });
+}
+
+loadPanelSslStatus();
+
+function saveSystemSettings() {
+    const data = {
+        app_name: document.getElementById('sAppName').value.trim(),
+        app_url: document.getElementById('sAppUrl').value.trim(),
+        server_ip: document.getElementById('sServerIp').value.trim(),
+        ns1: document.getElementById('sNs1').value.trim(),
+        ns2: document.getElementById('sNs2').value.trim(),
+        whmcs_api_key: document.getElementById('sWhmcsKey').value.trim(),
+        whmcs_api_secret: document.getElementById('sWhmcsSecret').value,
+        whmcs_jwt_secret: document.getElementById('sWhmcsJwt').value
+    };
+
+    if (!data.app_name) {
+        whpToast('Panel name is required', 'error');
+        return;
+    }
+
+    const btn = event.target.closest('button');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Saving...';
+
+    fetch('/api/system-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            whpToast('Settings saved! Reload to see changes.', 'success');
+            setTimeout(() => window.location.reload(), 1200);
+        } else {
+            whpToast(res.error || 'Save failed', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Save Settings';
+        }
+    })
+    .catch(err => {
+        whpToast('Error: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Save Settings';
+    });
+}
+</script>

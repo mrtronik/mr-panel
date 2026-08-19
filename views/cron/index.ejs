@@ -1,0 +1,132 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper" style="flex-direction:column">
+    <div class="pma-nav">
+      <span class="pma-nav-title"><i class="fa-solid fa-clock"></i> Cron Jobs</span>
+      <button class="btn btn-sm btn-primary" onclick="showAddModal()"><i class="fa-solid fa-plus"></i> Add Job</button>
+    </div>
+
+    <div class="pma-content">
+      <div class="pma-box">
+        <div class="pma-box-header">
+          <h3><i class="fa-solid fa-list"></i> Scheduled Tasks (<%= jobs.length %>)</h3>
+          <span class="text-muted" style="font-size:0.75rem">User: <%= username %></span>
+        </div>
+        <table class="pma-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Schedule</th>
+              <th>Command</th>
+              <th style="width:180px">Human Readable</th>
+              <th style="width:80px">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (jobs.length === 0) { %>
+            <tr><td colspan="5" class="text-center text-muted p-4">No cron jobs configured</td></tr>
+            <% } else { %>
+            <% jobs.forEach(function(job, i) { %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><code style="font-size:0.78rem;background:var(--table-header-bg);padding:3px 8px;border-radius:4px"><%= job.schedule %></code></td>
+              <td class="pma-cell" title="<%= job.command %>"><%= job.command %></td>
+              <td style="font-size:0.75rem;color:var(--text-light)"><%= job.schedule %></td>
+              <td class="pma-actions">
+                <button class="btn btn-xs btn-outline btn-danger" title="Delete" onclick="removeJob(<%= i %>)"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+            <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-plus"></i> Add Cron Job</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Quick Schedule</label>
+          <select class="form-select" id="quickSchedule" onchange="applyQuickSchedule()">
+            <option value="">-- Custom --</option>
+            <% schedules.forEach(function(s) { %>
+            <option value="<%= s.value %>"><%= s.label %> (<%= s.value %>)</option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Schedule</label>
+          <div style="display:flex;gap:4px">
+            <input type="text" class="form-control form-control-sm" id="cronMin" placeholder="min" value="*" style="text-align:center">
+            <input type="text" class="form-control form-control-sm" id="cronHour" placeholder="hour" value="*" style="text-align:center">
+            <input type="text" class="form-control form-control-sm" id="cronDay" placeholder="day" value="*" style="text-align:center">
+            <input type="text" class="form-control form-control-sm" id="cronMonth" placeholder="month" value="*" style="text-align:center">
+            <input type="text" class="form-control form-control-sm" id="cronWeekday" placeholder="wday" value="*" style="text-align:center">
+          </div>
+          <div style="font-size:0.7rem;color:var(--text-light);margin-top:4px">min hour day month weekday (0-6, 0=Sunday)</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Command</label>
+          <input type="text" class="form-control" id="cronCommand" placeholder="e.g. php /home/user/script.php">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="addJob()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showAddModal() { new bootstrap.Modal(document.getElementById('addModal')).show(); }
+
+function applyQuickSchedule() {
+    var val = document.getElementById('quickSchedule').value;
+    if (!val) return;
+    var parts = val.split(' ');
+    document.getElementById('cronMin').value = parts[0] || '*';
+    document.getElementById('cronHour').value = parts[1] || '*';
+    document.getElementById('cronDay').value = parts[2] || '*';
+    document.getElementById('cronMonth').value = parts[3] || '*';
+    document.getElementById('cronWeekday').value = parts[4] || '*';
+}
+
+function addJob() {
+    var schedule = [
+        document.getElementById('cronMin').value.trim() || '*',
+        document.getElementById('cronHour').value.trim() || '*',
+        document.getElementById('cronDay').value.trim() || '*',
+        document.getElementById('cronMonth').value.trim() || '*',
+        document.getElementById('cronWeekday').value.trim() || '*'
+    ].join(' ');
+    var command = document.getElementById('cronCommand').value.trim();
+    if (!command) return whpToast('Warning', 'Command required', 'warning');
+
+    fetch('/cron-jobs', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+        body: JSON.stringify({ schedule: schedule, command: command })
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Added','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+
+function removeJob(index) {
+    whpConfirm('Delete?', 'Remove this cron job?', function() {
+        fetch('/cron-jobs/remove', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+            body: JSON.stringify({ index: index })
+        }).then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Deleted','','success');setTimeout(function(){location.reload()},500)}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+</script>

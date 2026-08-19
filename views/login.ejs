@@ -1,0 +1,36 @@
+
+  <!-- Theme toggle -->
+  <button class="icon-btn theme-toggle login-theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+    <i class="fa-solid fa-moon"></i>
+  </button>
+
+  <div class="login-card">
+    <div class="login-logo"><i class="fa-solid fa-server"></i></div>
+    <h2><%= typeof appName !== 'undefined' ? appName : 'MR Panel' %></h2>
+    <p class="login-sub">Sign in to your hosting control panel</p>
+
+    <form method="POST" action="/login">
+      <div class="login-input-group">
+        <i class="fa-solid fa-user"></i>
+        <input type="text" name="username"  class="form-soft" placeholder="Username"  required />
+      </div>
+      <div class="login-input-group">
+        <i class="fa-solid fa-lock"></i>
+        <input type="password" name="password" class="form-soft" placeholder="Password"  required />
+      </div>
+
+      <div class="login-options">
+        <label style="color:var(--text-muted);display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" /> Remember me
+        </label>
+        <a href="#">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="login-btn"><i class="fa-solid fa-right-to-bracket me-2"></i>Sign In</button>
+    </form>
+
+    <div class="login-footer">
+      Protected by 256-bit SSL encryption<br/>
+      © <%= new Date().getFullYear() %> <%= typeof appName !== 'undefined' ? appName : 'MR Panel' %> · <a href="#" style="color:var(--primary)">Privacy</a>
+    </div>
+  </div>

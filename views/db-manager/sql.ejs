@@ -1,0 +1,127 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+<main class="page-content">
+  <div class="pma-wrapper">
+    <!-- Left Sidebar -->
+    <div class="pma-sidebar">
+      <div class="pma-sidebar-header">
+        <a href="/db-manager" class="pma-breadcrumb"><i class="fa-solid fa-database"></i> <%= dbName %></a>
+      </div>
+      <div class="pma-tree">
+        <% tables.forEach(function(t) { %>
+        <div class="pma-tree-item <%= t === currentTable ? 'active' : '' %>">
+          <a href="/db-manager/<%= dbName %>/browse/<%= t %>" class="tree-link">
+            <i class="fa-solid fa-table tree-icon-sm"></i> <%= t %>
+          </a>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="pma-main">
+      <div class="pma-nav">
+        <span class="pma-nav-title">
+          <a href="/db-manager/<%= dbName %>" class="pma-breadcrumb"><%= dbName %></a>
+          <i class="fa-solid fa-angle-right" style="font-size:0.7em"></i> SQL
+        </span>
+        <div class="pma-tabs">
+          <a href="/db-manager/<%= dbName %>/structure/<%= currentTable %>" class="pma-tab">Structure</a>
+          <a href="/db-manager/<%= dbName %>/browse/<%= currentTable %>" class="pma-tab">Browse</a>
+          <a href="/db-manager/<%= dbName %>/sql?table=<%= currentTable %>" class="pma-tab active">SQL</a>
+          <a href="/db-manager/<%= dbName %>/export?table=<%= currentTable %>" class="pma-tab">Export</a>
+        </div>
+      </div>
+
+      <div class="pma-content">
+        <div class="pma-box">
+          <div class="pma-box-header">
+            <h3><i class="fa-solid fa-terminal"></i> SQL Query</h3>
+            <div>
+              <button class="btn btn-sm btn-success" onclick="runQuery()"><i class="fa-solid fa-play"></i> Run</button>
+              <button class="btn btn-sm btn-outline" onclick="clearQuery()">Clear</button>
+            </div>
+          </div>
+          <textarea id="sqlEditor"><%= query || '' %></textarea>
+        </div>
+
+        <% if (typeof results !== 'undefined' && results) { %>
+        <div class="pma-box" id="resultBox">
+          <div class="pma-box-header">
+            <h3><i class="fa-solid fa-table"></i> Results</h3>
+            <span class="text-muted"><%= results.length %> rows <% if (typeof elapsed !== 'undefined') { %>in <%= elapsed %>ms<% } %></span>
+          </div>
+          <% if (results.length > 0) { %>
+          <div class="pma-table-wrapper">
+            <table class="pma-table pma-table-browse">
+              <thead>
+                <tr>
+                  <th style="width:30px">#</th>
+                  <% Object.keys(results[0]).forEach(function(key) { %>
+                  <th><%= key %></th>
+                  <% }); %>
+                </tr>
+              </thead>
+              <tbody>
+                <% results.forEach(function(row, i) { %>
+                <tr>
+                  <td><%= i + 1 %></td>
+                  <% Object.values(row).forEach(function(val) { %>
+                  <td class="pma-cell"><%= val !== null ? String(val).substring(0, 200) : '<span class="text-muted">NULL</span>' %></td>
+                  <% }); %>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+          <% } else { %>
+          <div class="pma-empty">Query executed successfully. No results returned.</div>
+          <% } %>
+        </div>
+        <% } %>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="pma-box">
+          <div class="pma-box-header">
+            <h3 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Error</h3>
+          </div>
+          <div class="pma-error"><%= error %></div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sql/sql.min.js"></script>
+<script>
+var editor = CodeMirror.fromTextArea(document.getElementById('sqlEditor'), {
+    mode: 'text/x-mysql',
+    theme: 'dracula',
+    lineNumbers: true,
+    indentUnit: 2,
+    tabSize: 2,
+    autofocus: true
+});
+
+function runQuery() {
+    var sql = editor.getValue().trim();
+    if (!sql) return whpToast('Warning', 'Enter a query', 'warning');
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/db-manager/<%= dbName %>/sql';
+    form.innerHTML = '<input type="hidden" name="sql" value="' + sql.replace(/"/g, '&quot;').replace(/</g, '&lt;') + '">';
+    <% if (currentTable) { %>
+    form.innerHTML += '<input type="hidden" name="table" value="<%= currentTable %>">';
+    <% } %>
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function clearQuery() {
+    editor.setValue('');
+    editor.focus();
+}
+</script>

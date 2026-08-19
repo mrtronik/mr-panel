@@ -1,0 +1,104 @@
+<div class="page-content">
+  <div class="breadcrumb-bar">
+    <a href="/dashboard">Home</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <span>Activity Log</span>
+  </div>
+
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div>
+      <h1>Activity Log</h1>
+      <p class="subtitle"><%= pagination.total %> activities recorded</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <form method="GET" style="display:flex;gap:8px">
+        <input type="text" class="form-soft" name="search" placeholder="Search..." value="<%= search %>" style="min-width:200px">
+        <button type="submit" class="btn-ghost"><i class="fa-solid fa-search"></i> Search</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card-soft">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table-soft">
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Target</th>
+              <th>Details</th>
+              <th>IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (logs && logs.length > 0) { %>
+              <% logs.forEach(function(log) { %>
+                <tr>
+                  <td><%= new Date(log.created_at).toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) %></td>
+                  <td>
+                    <span style="font-weight:600"><%= log.user_name || log.user_username || 'System' %></span>
+                  </td>
+                  <td>
+                    <% if (log.action === 'create') { %>
+                      <span class="badge-soft success"><i class="fa-solid fa-plus"></i> Create</span>
+                    <% } else if (log.action === 'delete') { %>
+                      <span class="badge-soft danger" style="color:#ef4444;background:rgba(239,68,68,0.1)"><i class="fa-solid fa-trash"></i> Delete</span>
+                    <% } else if (log.action === 'suspend') { %>
+                      <span class="badge-soft warning"><i class="fa-solid fa-pause"></i> Suspend</span>
+                    <% } else if (log.action === 'activate') { %>
+                      <span class="badge-soft success"><i class="fa-solid fa-play"></i> Activate</span>
+                    <% } else if (log.action === 'change-owner') { %>
+                      <span class="badge-soft info"><i class="fa-solid fa-user-pen"></i> Change Owner</span>
+                    <% } else { %>
+                      <span class="badge-soft"><%= log.action %></span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (log.target_type) { %>
+                      <span class="badge-soft" style="background:rgba(99,102,241,0.1);color:#6366f1"><%= log.target_type %></span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (log.details) { %>
+                      <span style="font-size:0.78rem;color:var(--text-light)">
+                        <% try { 
+                          const d = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+                          const keys = Object.keys(d);
+                          keys.forEach(function(k, i) { %><%= k %>: <%= d[k] %><%= i < keys.length - 1 ? ', ' : '' %><% }); 
+                        } catch(e) { %><%= log.details %><% } %>
+                      </span>
+                    <% } %>
+                  </td>
+                  <td><code style="font-size:0.75rem"><%= log.ip_address || '-' %></code></td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">
+                  <i class="fa-solid fa-clock-rotate-left" style="font-size:2rem;margin-bottom:8px;display:block"></i>
+                  No activity recorded yet.
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <% if (pagination.totalPages > 1) { %>
+  <div style="display:flex;justify-content:center;gap:8px;margin-top:16px">
+    <% if (pagination.page > 1) { %>
+      <a href="?page=<%= pagination.page - 1 %>&search=<%= search %>" class="btn-ghost"><i class="fa-solid fa-chevron-left"></i></a>
+    <% } %>
+    <span style="padding:6px 14px;font-size:0.82rem;color:var(--text-light)">
+      Page <%= pagination.page %> of <%= pagination.totalPages %>
+    </span>
+    <% if (pagination.page < pagination.totalPages) { %>
+      <a href="?page=<%= pagination.page + 1 %>&search=<%= search %>" class="btn-ghost"><i class="fa-solid fa-chevron-right"></i></a>
+    <% } %>
+  </div>
+  <% } %>
+</div>

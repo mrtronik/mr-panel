@@ -1,0 +1,308 @@
+<main class="page-content">
+    <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Python Application</span></div>
+    <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+      <div>
+        <h1><i class="fa-brands fa-python"></i> Python Application</h1>
+        <p class="subtitle">Install Python apps (Flask, Django, FastAPI) on your websites.</p>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="card-soft">
+          <div class="card-head"><h3><i class="fa-brands fa-python"></i> Install Python Application</h3></div>
+          <div class="card-body">
+            <form id="pyInstallForm">
+              <div class="mb-3">
+                <label class="form-label-soft">Select Domain <span style="color:#ef4444">*</span></label>
+                <select class="form-soft" id="pyDomain" required>
+                  <option value="">-- Pilih Domain --</option>
+                  <% if (websites.length === 0) { %>
+                    <option value="" disabled>No websites found</option>
+                  <% } else { %>
+                    <% websites.forEach(function(site) { %>
+                      <option value="<%= site.label %>"
+                        data-installed="<%= site.pythonInstalled %>"
+                        data-framework="<%= site.pythonInfo ? site.pythonInfo.framework : '' %>"
+                        data-port="<%= site.pythonInfo ? site.pythonInfo.port : '' %>"
+                        data-entry="<%= site.pythonInfo ? site.pythonInfo.entry_point : '' %>"
+                        data-docroot="<%= site.document_root || '/home/public_html/' + site.label %>">
+                        <%= site.label %>
+                        <% if (site.site_type === 'subdomain') { %> <span class="badge-soft info" style="font-size:0.6rem">subdomain</span><% } %>
+                        <% if (site.pythonInstalled) { %> (Python: <%= site.pythonInfo ? site.pythonInfo.framework : 'app' %>)<% } %>
+                      </option>
+                    <% }); %>
+                  <% } %>
+                </select>
+              </div>
+
+              <div id="pyStatus" class="mb-3" style="display:none">
+                <div class="card-soft" style="border-left:3px solid #f59e0b;padding:10px 14px">
+                  <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i> <span id="pyStatusText" style="font-size:0.85rem"></span>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">Python Version <span style="color:#ef4444">*</span></label>
+                  <select class="form-soft" id="pyVersion" required>
+                    <% pythonVersions.forEach(function(v) { %>
+                      <option value="<%= v %>" <%= v === '11' ? 'selected' : '' %>>Python 3.<%= v %></option>
+                    <% }); %>
+                  </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">Framework</label>
+                  <select class="form-soft" id="pyFramework">
+                    <option value="flask">Flask</option>
+                    <option value="django">Django</option>
+                    <option value="fastapi">FastAPI</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">Entry Point <span style="color:#ef4444">*</span></label>
+                  <input type="text" class="form-soft" id="pyEntryPoint" value="app:app" required placeholder="app:app">
+                  <small style="color:var(--text-light);font-size:0.72rem">Module:variable (e.g. app:app, main:app, config.wsgi:application)</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">Port Internal</label>
+                  <input type="number" class="form-soft" id="pyPort" placeholder="Auto (from hash)" min="5000" max="9999">
+                  <small style="color:var(--text-light);font-size:0.72rem">Kosongkan untuk auto-detect</small>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label-soft">Requirements.txt</label>
+                <textarea class="form-soft" id="pyRequirements" rows="6" placeholder="flask==3.0.0&#10;gunicorn==21.2.0&#10;requests==2.31.0" style="font-family:monospace;font-size:0.82rem"></textarea>
+                <small style="color:var(--text-light);font-size:0.72rem">Isi dependencies, satu per baris. Kosongkan jika sudah ada requirements.txt di server.</small>
+              </div>
+
+              <div class="card-soft" style="border-left:3px solid #3b82f6;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+                <i class="fa-solid fa-circle-info" style="color:#3b82f6;font-size:1.1rem"></i>
+                <div style="font-size:0.82rem">
+                  MR Panel akan otomatis: buat venv, install dependencies, buat systemd service, konfigurasi reverse proxy, dan start app.
+                </div>
+              </div>
+
+              <div style="text-align:right">
+                <button type="submit" class="btn-primary-soft" id="btnPyInstall"><i class="fa-solid fa-download"></i> Install Python Application</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card-soft">
+          <div class="card-head"><h3>Installed</h3></div>
+          <div class="card-body">
+            <% let hasInstalled = false; %>
+            <% websites.forEach(function(site) { %>
+              <% if (site.pythonInstalled) { %>
+                <% hasInstalled = true; %>
+                <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= site.label %></div>
+                      <div style="font-size:0.72rem;color:var(--text-light)">
+                        <%= site.pythonInfo ? site.pythonInfo.framework : 'python' %> | port <%= site.pythonInfo ? site.pythonInfo.port : '?' %>
+                        | <span class="badge-soft <%= site.pythonStatus === 'active' ? 'success' : 'danger' %>" style="font-size:0.65rem"><%= site.pythonStatus === 'active' ? 'running' : 'stopped' %></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:4px;margin-top:8px">
+                    <% if (site.pythonStatus === 'active') { %>
+                      <button class="btn-ghost" style="flex:1;padding:4px;font-size:0.75rem;color:#f59e0b" onclick="pyStop('<%= site.label %>')"><i class="fa-solid fa-stop"></i> Stop</button>
+                      <button class="btn-ghost" style="flex:1;padding:4px;font-size:0.75rem;color:#22c55e" onclick="pyRestart('<%= site.label %>')"><i class="fa-solid fa-rotate"></i> Restart</button>
+                    <% } else { %>
+                      <button class="btn-ghost" style="flex:1;padding:4px;font-size:0.75rem;color:#22c55e" onclick="pyStart('<%= site.label %>')"><i class="fa-solid fa-play"></i> Start</button>
+                    <% } %>
+                    <button class="btn-ghost" style="padding:4px 8px;font-size:0.75rem;color:var(--primary)" onclick="pyLogs('<%= site.label %>')"><i class="fa-solid fa-scroll"></i></button>
+                    <button class="btn-ghost" style="padding:4px 8px;font-size:0.75rem;color:#ef4444" onclick="deletePy('<%= site.label %>')"><i class="fa-solid fa-trash"></i></button>
+                  </div>
+                </div>
+              <% } %>
+            <% }); %>
+            <% if (!hasInstalled) { %>
+              <div style="text-align:center;padding:24px 0;color:var(--text-light)">
+                <i class="fa-brands fa-python" style="font-size:2rem;opacity:0.3"></i>
+                <p style="margin:8px 0 0;font-size:0.82rem">Belum ada Python app</p>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+</main>
+
+<div id="logsModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--bg-primary);border-radius:12px;padding:20px;width:90%;max-width:800px;max-height:80vh;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h5 style="margin:0" id="logsTitle">Logs</h5>
+      <button class="btn-ghost" onclick="document.getElementById('logsModal').style.display='none'" style="padding:4px 8px"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <pre id="logsContent" style="flex:1;overflow:auto;background:var(--bg-secondary);padding:12px;border-radius:8px;font-size:0.78rem;max-height:60vh;white-space:pre-wrap;word-break:break-all;margin:0"></pre>
+  </div>
+</div>
+
+<script>
+document.getElementById('pyDomain').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const installed = opt.dataset.installed === 'true';
+    const status = document.getElementById('pyStatus');
+    const statusText = document.getElementById('pyStatusText');
+
+    if (installed) {
+        status.style.display = 'block';
+        const fw = opt.dataset.framework || 'app';
+        statusText.innerHTML = 'Python app sudah terinstall (' + fw + '). Reinstall akan overwrite.';
+    } else {
+        status.style.display = 'none';
+    }
+
+    // Auto-fill framework defaults
+    if (opt.value) {
+        const fw = opt.dataset.framework;
+        if (fw && fw !== 'custom') {
+            document.getElementById('pyFramework').value = fw;
+            updateEntryPoint(fw);
+        }
+    }
+});
+
+document.getElementById('pyFramework').addEventListener('change', function() {
+    updateEntryPoint(this.value);
+});
+
+function updateEntryPoint(fw) {
+    const defaults = {
+        flask: 'app:app',
+        django: 'config.wsgi:application',
+        fastapi: 'main:app',
+        custom: 'app:app'
+    };
+    const input = document.getElementById('pyEntryPoint');
+    if (input.value === '' || Object.values(defaults).includes(input.value)) {
+        input.value = defaults[fw] || 'app:app';
+    }
+}
+
+document.getElementById('pyInstallForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const domain = document.getElementById('pyDomain').value;
+    if (!domain) return whpToast('Error', 'Pilih domain', 'error');
+
+    const btn = document.getElementById('btnPyInstall');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Installing...';
+
+    try {
+        const res = await fetch('/api/installer/python/install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                domain,
+                pythonVersion: document.getElementById('pyVersion').value,
+                framework: document.getElementById('pyFramework').value,
+                entryPoint: document.getElementById('pyEntryPoint').value,
+                port: document.getElementById('pyPort').value || undefined,
+                requirements: document.getElementById('pyRequirements').value || undefined
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            whpToast('Error', data.error, 'error');
+        } else {
+            let msg = 'Python app installed!\n';
+            msg += 'Port: ' + data.port + '\n';
+            msg += 'Entry: ' + data.entryPoint + '\n';
+            msg += 'Framework: ' + data.framework + '\n';
+            msg += 'URL: http://' + domain;
+            whpToast('Berhasil!', msg, 'success');
+            setTimeout(function() { location.reload(); }, 2000);
+        }
+    } catch (err) {
+        whpToast('Error', err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-download"></i> Install Python Application';
+    }
+});
+
+async function pyStart(domain) {
+    try {
+        const res = await fetch('/api/installer/python/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain })
+        });
+        const data = await res.json();
+        if (data.error) whpToast('Error', data.error, 'error');
+        else { whpToast('Started!', domain + ' started', 'success'); setTimeout(function() { location.reload(); }, 1000); }
+    } catch (err) { whpToast('Error', err.message, 'error'); }
+}
+
+async function pyStop(domain) {
+    try {
+        const res = await fetch('/api/installer/python/stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain })
+        });
+        const data = await res.json();
+        if (data.error) whpToast('Error', data.error, 'error');
+        else { whpToast('Stopped!', domain + ' stopped', 'success'); setTimeout(function() { location.reload(); }, 1000); }
+    } catch (err) { whpToast('Error', err.message, 'error'); }
+}
+
+async function pyRestart(domain) {
+    try {
+        const res = await fetch('/api/installer/python/restart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain })
+        });
+        const data = await res.json();
+        if (data.error) whpToast('Error', data.error, 'error');
+        else { whpToast('Restarted!', domain + ' restarted', 'success'); setTimeout(function() { location.reload(); }, 1000); }
+    } catch (err) { whpToast('Error', err.message, 'error'); }
+}
+
+async function pyLogs(domain) {
+    try {
+        const res = await fetch('/api/installer/python/logs?domain=' + encodeURIComponent(domain) + '&lines=80');
+        const data = await res.json();
+        document.getElementById('logsTitle').textContent = 'Logs - ' + domain;
+        document.getElementById('logsContent').textContent = data.logs || 'No logs';
+        document.getElementById('logsModal').style.display = 'flex';
+    } catch (err) { whpToast('Error', err.message, 'error'); }
+}
+
+async function deletePy(domain) {
+    whpConfirm('Hapus Python App?', 'Virtual environment, service, dan config di ' + domain + ' akan dihapus', async function() {
+        try {
+            const res = await fetch('/api/installer/python/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain })
+            });
+            const data = await res.json();
+            if (data.error) {
+                whpToast('Error', data.error, 'error');
+            } else {
+                whpToast('Deleted!', 'Python app dihapus.', 'success');
+                setTimeout(function() { location.reload(); }, 1500);
+            }
+        } catch (err) {
+            whpToast('Error', err.message, 'error');
+        }
+    });
+}
+</script>

@@ -1,0 +1,78 @@
+<div class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box justify-content-between d-flex align-items-lg-center flex-lg-row flex-column">
+                    <h4 class="page-title"><i class="ri-user-add-line me-2"></i>Add User</h4>
+                    <a href="/users" class="btn btn-light btn-sm"><i class="ri-arrow-left-line me-1"></i>Back</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <% if (error) { %>
+                        <div class="alert alert-danger"><%= error %></div>
+                        <% } %>
+
+                        <form method="POST" action="/users">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" name="name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Username *</label>
+                                    <input type="text" class="form-control" name="username" required pattern="[a-z0-9]+" title="Lowercase letters and numbers only">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email *</label>
+                                    <input type="email" class="form-control" name="email" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Password *</label>
+                                    <input type="password" class="form-control" name="password" required minlength="6">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Role *</label>
+                                    <select class="form-select" name="role" required>
+                                        <option value="user">User</option>
+                                        <option value="reseller">Reseller</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Package</label>
+                                    <select class="form-select" name="package_id">
+                                        <option value="">No Package</option>
+                                        <% packages.forEach(function(p) { %>
+                                        <option value="<%= p.id %>"><%= p.name %> (<%= formatSize(p.disk_limit) %>)</option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" name="status">
+                                        <option value="active">Active</option>
+                                        <option value="suspended">Suspended</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary"><i class="ri-check-line me-1"></i>Create User</button>
+                            <a href="/users" class="btn btn-light ms-2">Cancel</a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

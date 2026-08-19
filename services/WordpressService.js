@@ -1,0 +1,257 @@
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+const WP_ZIP_URL = 'https://wordpress.org/latest.zip';
+const WP_EXTRACT_DIR = 'wordpress';
+
+class WordpressInstaller {
+
+    static async downloadAndExtract(destDir) {
+        const tmpId = 'wp-' + Date.now();
+        const zipPath = `/tmp/${tmpId}.zip`;
+        const extractDir = `/tmp/${tmpId}-extract`;
+
+        // Ensure dest dir exists
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+        }
+
+        // Download using curl (follows redirects properly)
+        execSync(`curl -sL -o "${zipPath}" "${WP_ZIP_URL}"`, { timeout: 120000 });
+
+        if (!fs.existsSync(zipPath) || fs.statSync(zipPath).size < 1000000) {
+            throw new Error('WordPress download failed');
+        }
+
+        // Extract
+        execSync(`rm -rf "${extractDir}" && mkdir -p "${extractDir}" && unzip -o "${zipPath}" -d "${extractDir}"`, { timeout: 60000 });
+
+        // Find extracted wordpress folder
+        const wpSource = path.join(extractDir, WP_EXTRACT_DIR);
+
+        if (!fs.existsSync(wpSource)) {
+            throw new Error('WordPress extraction failed - no wordpress/ folder found');
+        }
+
+        // Move to dest
+        execSync(`cp -r "${wpSource}/." "${destDir}/"`, { timeout: 30000 });
+
+        // Cleanup
+        try { fs.unlinkSync(zipPath); } catch {}
+        try { execSync(`rm -rf "${extractDir}"`, { stdio: 'ignore' }); } catch {}
+
+        return { success: true };
+    }
+
+    static createWpConfig(destDir, config) {
+        const wpConfigSample = path.join(destDir, 'wp-config-sample.php');
+        const wpConfig = path.join(destDir, 'wp-config.php');
+
+        if (!fs.existsSync(wpConfigSample)) {
+            throw new Error('wp-config-sample.php not found');
+        }
+
+        let content = fs.readFileSync(wpConfigSample, 'utf8');
+
+        // Generate salts
+        const salts = this.generateSalts();
+
+        content = content.replace("database_name_here", config.dbName);
+        content = content.replace("username_here", config.dbUser);
+        content = content.replace("password_here", config.dbPassword);
+        content = content.replace(/define\s*\(\s*'DB_HOST'\s*,\s*'[^']*'\s*\)/, `define( 'DB_HOST', '${config.dbHost || 'localhost'}' )`);
+        content = content.replace("'utf8_general_ci'", "'utf8mb4_unicode_ci'");
+        content = content.replace("'utf8'", "'utf8mb4'");
+
+        // Add table prefix
+        const tablePrefix = config.tablePrefix || 'wp_';
+        if (!content.includes("table_prefix")) {
+            content += `\n$table_prefix = '${tablePrefix}';\n`;
+        } else {
+            content = content.replace("wp_", tablePrefix);
+        }
+
+        // Add salts before "That's all"
+        content = content.replace("/* That's all", salts + "\n/* That's all");
+
+        fs.writeFileSync(wpConfig, content, 'utf8');
+
+        // Set permissions
+        try { execSync(`chmod 640 "${wpConfig}"`, { stdio: 'ignore' }); } catch {}
+
+        return { success: true };
+    }
+
+    static async installWordPress(destDir, siteUrl, config) {
+        console.log('[WP] Starting install to', destDir);
+
+        // Step 1: Download and extract
+        console.log('[WP] Downloading WordPress...');
+        await this.downloadAndExtract(destDir);
+        console.log('[WP] Download and extract done');
+
+        // Verify files exist
+        const wpLoad = path.join(destDir, 'wp-load.php');
+        if (!fs.existsSync(wpLoad)) {
+            throw new Error('wp-load.php not found after extraction at ' + destDir);
+        }
+
+        // Step 2: Remove default index.html so WordPress index.php takes over
+        const defaultIndex = path.join(destDir, 'index.html');
+        if (fs.existsSync(defaultIndex)) {
+            try { fs.unlinkSync(defaultIndex); } catch {}
+        }
+
+        // Step 3: Create wp-config.php
+        console.log('[WP] Creating wp-config.php...');
+        this.createWpConfig(destDir, config);
+
+        // Step 4: Create .htaccess for WordPress (OLS reads rewrite.conf, but WP checks .htaccess)
+        const htaccess = `# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress`;
+        try { fs.writeFileSync(path.join(destDir, '.htaccess'), htaccess); } catch {}
+
+        // Step 5: Set permissions
+        try {
+            execSync(`chown -R lsadm:nogroup "${destDir}" 2>/dev/null || chown -R www-data:www-data "${destDir}" 2>/dev/null`, { stdio: 'ignore' });
+            execSync(`chmod 664 "${destDir}/.htaccess"`, { stdio: 'ignore' });
+        } catch {}
+
+        // Step 5: Install WP-CLI if needed
+        const wpCliGlobal = '/usr/local/bin/wp';
+        if (!fs.existsSync(wpCliGlobal)) {
+            try {
+                execSync('curl -sL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /tmp/wp-cli.phar && chmod +x /tmp/wp-cli.phar && mv /tmp/wp-cli.phar ' + wpCliGlobal, {
+                    timeout: 60000
+                });
+            } catch (e) {
+                console.error('[WP] WP-CLI download failed:', e.message);
+            }
+        }
+
+        const wpCmd = fs.existsSync(wpCliGlobal) ? wpCliGlobal : null;
+
+        if (!wpCmd) {
+            throw new Error('WP-CLI not available at ' + wpCliGlobal);
+        }
+
+        // Step 6: Run wp core install
+        console.log('[WP] Running wp core install...');
+        const cmd = `${wpCmd} core install --path="${destDir}" --url="${siteUrl}" --title="${config.siteName}" --admin_user="${config.adminUser}" --admin_password="${config.adminPassword}" --admin_email="${config.adminEmail}" --skip-email --allow-root 2>&1`;
+        const output = execSync(cmd, { encoding: 'utf8', timeout: 120000 });
+        console.log('[WP] wp core install output:', output);
+
+        // Set permalink
+        try { execSync(`${wpCmd} rewrite structure '/%postname%/' --path="${destDir}" --allow-root 2>&1`, { encoding: 'utf8' }); } catch {}
+        try { execSync(`${wpCmd} rewrite flush --path="${destDir}" --allow-root 2>&1`, { encoding: 'utf8' }); } catch {}
+
+        // Set permissions again after WP-CLI
+        try { execSync(`chown -R lsadm:nogroup "${destDir}" 2>/dev/null || true`, { stdio: 'ignore' }); } catch {}
+
+        console.log('[WP] Install complete');
+        return { success: true, method: 'wp-cli', message: output };
+    }
+
+    static generateSalts() {
+        const keys = [
+            'LOGGED_IN_KEY', 'LOGGED_IN_SALT',
+            'AUTH_KEY', 'SECURE_AUTH_KEY', 'NONCE_KEY',
+            'AUTH_SALT', 'SECURE_AUTH_SALT', 'NONCE_SALT'
+        ];
+        let salts = '';
+        for (const key of keys) {
+            const value = require('crypto').randomBytes(64).toString('base64');
+            salts += `define('${key}', '${value}');\n`;
+        }
+        return salts;
+    }
+
+    static getInstalledVersion(destDir) {
+        const wpInc = path.join(destDir, 'wp-includes', 'version.php');
+        if (!fs.existsSync(wpInc)) return null;
+
+        const content = fs.readFileSync(wpInc, 'utf8');
+        const match = content.match(/\$wp_version\s*=\s*'([^']+)'/);
+        return match ? match[1] : null;
+    }
+
+    static isInstalled(destDir) {
+        return fs.existsSync(path.join(destDir, 'wp-config.php')) &&
+               fs.existsSync(path.join(destDir, 'wp-includes'));
+    }
+
+    static listPlugins(destDir) {
+        const pluginsDir = path.join(destDir, 'wp-content', 'plugins');
+        if (!fs.existsSync(pluginsDir)) return [];
+
+        return fs.readdirSync(pluginsDir, { withFileTypes: true })
+            .filter(d => d.isDirectory())
+            .map(d => d.name);
+    }
+
+    static listThemes(destDir) {
+        const themesDir = path.join(destDir, 'wp-content', 'themes');
+        if (!fs.existsSync(themesDir)) return [];
+
+        return fs.readdirSync(themesDir, { withFileTypes: true })
+            .filter(d => d.isDirectory())
+            .map(d => d.name);
+    }
+
+static removeWp(destDir) {
+    if (fs.existsSync(destDir)) {
+        const wpItems = [
+            // Directories
+            'wp-admin', 'wp-content', 'wp-includes',
+            
+            // ✅ FIX: Missing root files yang ga kehapus
+            '.htaccess',
+            'wp-activate.php',
+            'wp-comments-post.php',
+            
+            // Root PHP files
+            'wp-config.php', 'wp-config-sample.php', 'wp-login.php',
+            'wp-settings.php', 'wp-blog-header.php', 'wp-cron.php',
+            'wp-links-opml.php', 'wp-load.php', 'wp-mail.php',
+            'wp-signup.php', 'wp-trackback.php',
+            'xmlrpc.php', 'index.php',
+            
+            // Other files
+            'readme.html', 'license.txt', 'error_log'
+        ];
+        for (const item of wpItems) {
+            const itemPath = path.join(destDir, item);
+            if (fs.existsSync(itemPath)) {
+                execSync(`rm -rf "${itemPath}"`, { stdio: 'ignore' });
+            }
+        }
+        
+        // ✅ FIX: Also catch any stray wp-*.php files
+        try {
+            const files = fs.readdirSync(destDir);
+            for (const file of files) {
+                if (file.startsWith('wp-') || file === '.htaccess' || file === 'index.php') {
+                    execSync(`rm -f "${path.join(destDir, file)}"`, { stdio: 'ignore' });
+                }
+            }
+        } catch {}
+
+        fs.mkdirSync(destDir, { recursive: true });
+        try {
+            execSync(`chown lsadm:nogroup "${destDir}" 2>/dev/null || true`, { stdio: 'ignore' });
+        } catch {}
+    }
+    return { success: true };
+}
+}
+
+module.exports = WordpressInstaller;

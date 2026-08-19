@@ -1,0 +1,126 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Web Terminal</span></div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div><h1><i class="fa-solid fa-terminal"></i> Web Terminal</h1><p class="subtitle">Akses terminal langsung dari browser.</p></div>
+    <div class="d-flex gap-2 align-items-center">
+      <span id="terminal-status" class="badge-soft info">Connecting...</span>
+      <button class="btn-ghost" onclick="reconnectTerminal()"><i class="fa-solid fa-rotate"></i> Reconnect</button>
+    </div>
+  </div>
+
+  <div class="card-soft" style="overflow:hidden">
+    <div id="terminal-container" style="height:calc(100vh - 220px);min-height:400px;background:#1e1e1e"></div>
+  </div>
+
+  <script type="application/json" id="terminal-user-data"><%- JSON.stringify(user || {}) %></script>
+</main>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+var term = null;
+var socket = null;
+var fitAddon = null;
+
+function initTerminal() {
+    term = new Terminal({
+        theme: {
+            background: '#1e1e1e',
+            foreground: '#d4d4d4',
+            cursor: '#d4d4d4',
+            cursorAccent: '#1e1e1e',
+            selectionBackground: '#264f78',
+            black: '#1e1e1e',
+            red: '#f44747',
+            green: '#6a9955',
+            yellow: '#dcdcaa',
+            blue: '#569cd6',
+            magenta: '#c586c0',
+            cyan: '#4ec9b0',
+            white: '#d4d4d4',
+            brightBlack: '#808080',
+            brightRed: '#f44747',
+            brightGreen: '#6a9955',
+            brightYellow: '#dcdcaa',
+            brightBlue: '#569cd6',
+            brightMagenta: '#c586c0',
+            brightCyan: '#4ec9b0',
+            brightWhite: '#ffffff'
+        },
+        fontFamily: '"Cascadia Code", "Fira Code", "JetBrains Mono", Menlo, Monaco, "Courier New", monospace',
+        fontSize: 14,
+        lineHeight: 1.2,
+        cursorBlink: true,
+        cursorStyle: 'bar',
+        allowTransparency: true,
+        scrollback: 5000
+    });
+
+    fitAddon = new FitAddon.FitAddon();
+    var webLinksAddon = new WebLinksAddon.WebLinksAddon();
+    term.loadAddon(fitAddon);
+    term.loadAddon(webLinksAddon);
+    term.open(document.getElementById('terminal-container'));
+
+    setTimeout(function() { fitAddon.fit(); }, 100);
+
+    term.onData(function(data) {
+        if (socket && socket.connected) socket.emit('terminal:data', data);
+    });
+
+    window.addEventListener('resize', function() { if (fitAddon) fitAddon.fit(); });
+    new ResizeObserver(function() { if (fitAddon) fitAddon.fit(); }).observe(document.getElementById('terminal-container'));
+}
+
+function connectSocket() {
+    socket = io();
+    socket.on('connect', function() {
+        document.getElementById('terminal-status').className = 'badge-soft warning';
+        document.getElementById('terminal-status').textContent = 'Connecting...';
+        var userData = null;
+        try { var userEl = document.getElementById('terminal-user-data'); if (userEl) userData = JSON.parse(userEl.textContent); } catch(e) {}
+        socket.emit('terminal:create', { user: userData });
+    });
+    socket.on('terminal:created', function(data) {
+        document.getElementById('terminal-status').className = 'badge-soft success';
+        document.getElementById('terminal-status').textContent = 'Connected as ' + data.user + ' (' + data.shell + ')';
+        term.focus();
+    });
+    socket.on('terminal:data', function(data) { term.write(data); });
+    socket.on('terminal:exit', function(data) {
+        document.getElementById('terminal-status').className = 'badge-soft danger';
+        document.getElementById('terminal-status').textContent = 'Disconnected (exit: ' + data.exitCode + ')';
+    });
+    socket.on('disconnect', function() {
+        document.getElementById('terminal-status').className = 'badge-soft danger';
+        document.getElementById('terminal-status').textContent = 'Disconnected';
+    });
+}
+
+function reconnectTerminal() {
+    if (socket) socket.disconnect();
+    term.clear();
+    connectSocket();
+}
+
+var observer = new ResizeObserver(function() {
+    if (fitAddon) {
+        setTimeout(function() {
+            fitAddon.fit();
+            if (socket && socket.connected) socket.emit('terminal:resize', { cols: term.cols, rows: term.rows });
+        }, 100);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    initTerminal();
+    connectSocket();
+    observer.observe(document.getElementById('terminal-container'));
+    term.onResize(function(size) {
+        if (socket && socket.connected) socket.emit('terminal:resize', { cols: size.cols, rows: size.rows });
+    });
+});
+</script>

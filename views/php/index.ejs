@@ -1,0 +1,431 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>PHP Manager</span></div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div><h1><i class="fa-brands fa-php"></i> PHP Manager</h1><p class="subtitle">Manage PHP versions, settings, and extensions</p></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <% if (cacheAge) { %>
+      <span style="font-size:0.72rem;color:var(--text-light)">Cache: <%= Math.floor(cacheAge.ageSeconds / 60) %>m ago</span>
+      <% } %>
+      <button class="btn-ghost" onclick="refreshPhp()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      <button class="btn-ghost" onclick="restartPhp()"><i class="fa-solid fa-power-off"></i> Restart PHP</button>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card-soft">
+        <div class="card-body text-center">
+          <i class="fa-brands fa-php" style="font-size:2rem;color:var(--primary)"></i>
+          <h5 class="mt-2">PHP <%= version %></h5>
+          <span class="badge-soft <%= serviceStatus.running ? 'success' : 'danger' %>"><%= serviceStatus.running ? 'Running' : 'Stopped' %></span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-soft">
+        <div class="card-body">
+          <h6 style="font-weight:600">ionCube Loader</h6>
+          <% if (ionCube && ionCube.enabled) { %>
+            <p class="mb-0"><span class="badge-soft success"><i class="fa-solid fa-check"></i> Enabled</span> v<%= ionCube.version || 'unknown' %></p>
+            <button class="btn-ghost" style="margin-top:8px;padding:4px 12px;font-size:0.78rem;color:#ef4444" onclick="uninstallIonCube()"><i class="fa-solid fa-xmark"></i> Disable</button>
+          <% } else { %>
+            <p class="mb-0"><span class="badge-soft info"><i class="fa-solid fa-xmark"></i> Not Installed</span></p>
+            <button class="btn-primary-soft" style="margin-top:8px;padding:4px 12px;font-size:0.78rem" onclick="installIonCube()"><i class="fa-solid fa-download"></i> Install ionCube</button>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-soft">
+        <div class="card-body">
+          <h6 style="font-weight:600">php.ini Location</h6>
+          <p class="mb-0" style="word-break:break-all;font-size:0.78rem;color:var(--text-light)"><%= iniPath || 'Not found' %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ul class="nav nav-tabs" id="phpTab" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabVersions">Versions</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabSettings">Key Settings</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabModules">Modules</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabOpCache">OPcache</a></li>
+  </ul>
+
+  <div class="tab-content" style="padding:16px 0">
+    <!-- Tab: Versions Marketplace -->
+    <div class="tab-pane fade show active" id="tabVersions">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 style="font-weight:600;margin:0">Available PHP Versions</h6>
+        <button class="btn-ghost" style="font-size:0.78rem" onclick="refreshVersions()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+      </div>
+      <div class="row g-3" id="versionsGrid">
+        <% availableVersions.forEach(function(v) { %>
+        <div class="col-md-4 col-sm-6" id="ver-<%= v.version.replace('.', '') %>">
+          <div class="card-soft" style="<%= v.active ? 'border:2px solid var(--primary)' : '' %>">
+            <div class="card-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <i class="fa-brands fa-php" style="font-size:1.5rem;color:<%= v.active ? 'var(--primary)' : 'var(--text-light)' %>"></i>
+                  <div>
+                    <div style="font-weight:700;font-size:1.1rem">PHP <%= v.version %></div>
+                    <div style="font-size:0.72rem;color:var(--text-light)"><%= v.pkg %></div>
+                  </div>
+                </div>
+                <% if (v.active) { %>
+                  <span class="badge-soft success">Active</span>
+                <% } else if (v.installed) { %>
+                  <span class="badge-soft info">Installed</span>
+                <% } %>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+                <% v.extensions.slice(0, 6).forEach(function(ext) { %>
+                  <span style="font-size:0.65rem;padding:2px 6px;background:var(--bg-secondary);border-radius:4px;color:var(--text-light)"><%= ext.replace(v.pkg + '-', '') %></span>
+                <% }); %>
+                <% if (v.extensions.length > 6) { %>
+                  <span style="font-size:0.65rem;padding:2px 6px;background:var(--bg-secondary);border-radius:4px;color:var(--text-light)">+<%= v.extensions.length - 6 %></span>
+                <% } %>
+              </div>
+              <div style="display:flex;gap:6px">
+                <% if (v.active) { %>
+                  <button class="btn-ghost" style="flex:1;justify-content:center;font-size:0.78rem;opacity:0.5" disabled><i class="fa-solid fa-star"></i> Default</button>
+                <% } else if (v.installed) { %>
+                  <button class="btn-primary-soft" style="flex:1;justify-content:center;font-size:0.78rem" onclick="setDefault('<%= v.version %>')"><i class="fa-solid fa-star"></i> Make Default</button>
+                  <button class="btn-ghost" style="justify-content:center;font-size:0.78rem" onclick="viewSettings('<%= v.version %>')"><i class="fa-solid fa-gear"></i></button>
+                  <button class="btn-ghost" style="justify-content:center;font-size:0.78rem;color:#ef4444" onclick="uninstallPhp('<%= v.version %>')"><i class="fa-solid fa-trash"></i></button>
+                <% } else { %>
+                  <button class="btn-primary-soft" style="flex:1;justify-content:center;font-size:0.78rem" onclick="installPhp('<%= v.version %>')"><i class="fa-solid fa-download"></i> Install</button>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Tab: Key Settings -->
+    <div class="tab-pane fade" id="tabSettings">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 style="font-weight:600;margin:0">Key PHP Settings</h6>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="form-soft" id="settingsVersion" style="width:auto;font-size:0.82rem;padding:4px 8px" onchange="loadIniSettings(this.value)">
+            <% availableVersions.filter(function(v){return v.installed}).forEach(function(v) { %>
+              <option value="<%= v.version %>" <%= v.active ? 'selected' : '' %>><%= v.version %></option>
+            <% }); %>
+          </select>
+          <button class="btn-primary-soft" style="font-size:0.78rem" onclick="saveIniSettings()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+      </div>
+      <div class="card-soft">
+        <div class="card-body p-0">
+          <table class="table-soft" id="iniTable">
+            <thead><tr><th style="width:40%">Setting</th><th>Value</th></tr></thead>
+            <tbody id="iniBody">
+              <tr><td colspan="2" style="text-align:center;padding:24px;color:var(--text-light)">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Modules -->
+    <div class="tab-pane fade" id="tabModules">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 style="font-weight:600;margin:0">Loaded Modules</h6>
+        <select class="form-soft" id="modulesVersion" style="width:auto;font-size:0.82rem;padding:4px 8px" onchange="loadModules(this.value)">
+          <% availableVersions.filter(function(v){return v.installed}).forEach(function(v) { %>
+            <option value="<%= v.version %>" <%= v.active ? 'selected' : '' %>><%= v.version %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="row" id="modulesGrid">
+        <% modules.forEach(function(mod) { %>
+        <div class="col-md-3 col-sm-4 mb-2">
+          <span class="badge-soft success" style="width:100%;text-align:left;padding:6px 10px;font-size:0.78rem"><i class="fa-solid fa-check"></i> <%= mod %></span>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Tab: OPcache -->
+    <div class="tab-pane fade" id="tabOpCache">
+      <h6 style="font-weight:600">OPcache Status</h6>
+      <% if (opcache) { %>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card-soft">
+            <div class="card-head"><h3>Memory</h3></div>
+            <div class="card-body p-0">
+              <table class="table-soft">
+                <tr><td>Enabled</td><td><span class="badge-soft <%= opcache.opcache_enabled ? 'success' : 'danger' %>"><%= opcache.opcache_enabled ? 'Yes' : 'No' %></span></td></tr>
+                <tr><td>Used</td><td><%= opcache.memory_usage ? (opcache.memory_usage.used_memory / 1024 / 1024).toFixed(2) + ' MB' : 'N/A' %></td></tr>
+                <tr><td>Free</td><td><%= opcache.memory_usage ? (opcache.memory_usage.free_memory / 1024 / 1024).toFixed(2) + ' MB' : 'N/A' %></td></tr>
+                <tr><td>Buffer</td><td><%= opcache.memory_usage ? (opcache.memory_usage.buffer_size / 1024 / 1024).toFixed(2) + ' MB' : 'N/A' %></td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card-soft">
+            <div class="card-head"><h3>Statistics</h3></div>
+            <div class="card-body p-0">
+              <table class="table-soft">
+                <tr><td>Hits</td><td><%= opcache.opcache_statistics ? opcache.opcache_statistics.hits.toLocaleString() : 'N/A' %></td></tr>
+                <tr><td>Misses</td><td><%= opcache.opcache_statistics ? opcache.opcache_statistics.misses.toLocaleString() : 'N/A' %></td></tr>
+                <tr><td>Hit Rate</td><td><%= opcache.opcache_statistics ? (opcache.opcache_statistics.opcache_hit_rate * 100).toFixed(2) + '%' : 'N/A' %></td></tr>
+                <tr><td>Scripts</td><td><%= opcache.opcache_statistics ? opcache.opcache_statistics.num_cached_scripts : 'N/A' %></td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% } else { %>
+      <p style="color:var(--text-light)">OPcache info not available</p>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<script>
+var INI_SETTINGS = {};
+
+function refreshPhp() {
+  var loading = whpLoading('Refreshing...', 'Fetching latest PHP data from server...');
+  fetch('/api/php/refresh', { method: 'POST' })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    loading.close();
+    if (data.success) {
+      whpToast('Refreshed!', 'PHP data updated', 'success');
+      setTimeout(function() { location.reload(); }, 500);
+    } else {
+      whpToast('Error', data.error, 'error');
+    }
+  })
+  .catch(function(err) {
+    loading.close();
+    whpToast('Error', err.message, 'error');
+  });
+}
+
+function restartPhp() {
+  whpConfirm('Restart PHP?', 'This will briefly interrupt PHP processing.', function() {
+    fetch('/api/php/restart', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        whpToast('PHP restarted', '', 'success');
+        setTimeout(function() { location.reload(); }, 1000);
+      } else {
+        whpToast('Error', data.error, 'error');
+      }
+    })
+    .catch(function(err) { whpToast('Error', err.message, 'error'); });
+  });
+}
+
+function installPhp(version) {
+  whpConfirm('Install PHP ' + version + '?', 'This may take 30-60 seconds.', function() {
+    var loading = whpLoading('Installing PHP ' + version + '...', 'Downloading packages...');
+    fetch('/api/php/install', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version: version })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loading.close();
+      if (data.success) {
+        whpToast('Success!', 'PHP ' + version + ' installed successfully', 'success');
+        setTimeout(function() { window.location.href = '/php-settings'; }, 1200);
+      } else {
+        whpToast('Install Failed', data.error, 'error');
+      }
+    })
+    .catch(function(err) {
+      loading.close();
+      whpToast('Error', err.message, 'error');
+    });
+  }, 'Install');
+}
+
+function uninstallPhp(version) {
+  whpConfirm('Uninstall PHP ' + version + '?', 'Make sure no websites are using this version.', function() {
+    var loading = whpLoading('Uninstalling PHP ' + version + '...', 'Removing packages...');
+    fetch('/api/php/uninstall', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version: version })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loading.close();
+      if (data.success) {
+        whpToast('PHP ' + version + ' uninstalled', '', 'success');
+        setTimeout(function() { window.location.href = '/php-settings'; }, 1200);
+      } else {
+        whpToast('Uninstall Failed', data.error, 'error');
+      }
+    })
+    .catch(function(err) {
+      loading.close();
+      whpToast('Error', err.message, 'error');
+    });
+  }, 'Uninstall');
+}
+
+function setDefault(version) {
+  whpConfirm('Set PHP ' + version + ' as default?', 'All new websites will use this version.', function() {
+    var loading = whpLoading('Setting PHP ' + version + ' as default...', 'Updating OLS configuration...');
+    fetch('/api/php/set-default', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version: version })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      loading.close();
+      if (data.success) {
+        whpToast('PHP ' + version + ' is now default!', '', 'success');
+        setTimeout(function() { window.location.href = '/php-settings'; }, 1200);
+      } else {
+        whpToast('Error', data.error, 'error');
+      }
+    })
+    .catch(function(err) {
+      loading.close();
+      whpToast('Error', err.message, 'error');
+    });
+  }, 'Set Default');
+}
+
+function loadIniSettings(version) {
+  var body = document.getElementById('iniBody');
+  body.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:16px;color:var(--text-light)">Loading...</td></tr>';
+
+  fetch('/api/php/ini/' + version)
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    INI_SETTINGS = data.settings || {};
+    var labels = {
+      'memory_limit': 'Memory Limit',
+      'upload_max_filesize': 'Upload Max Filesize',
+      'post_max_size': 'Post Max Size',
+      'max_execution_time': 'Max Execution Time',
+      'max_input_time': 'Max Input Time',
+      'max_file_uploads': 'Max File Uploads',
+      'display_errors': 'Display Errors',
+      'error_reporting': 'Error Reporting',
+      'date.timezone': 'Timezone',
+      'session.auto_start': 'Session Auto Start',
+      'session.gc_maxlifetime': 'Session GC Lifetime',
+      'opcache.enable': 'OPcache Enable',
+      'opcache.memory_consumption': 'OPcache Memory',
+      'short_open_tag': 'Short Open Tag',
+      'allow_url_fopen': 'Allow URL Fopen',
+      'allow_url_include': 'Allow URL Include',
+      'cgi.fix_pathinfo': 'CGI Fix Pathinfo'
+    };
+    var html = '';
+    Object.entries(labels).forEach(function([key, label]) {
+      var val = INI_SETTINGS[key] || '';
+      html += '<tr>';
+      html += '<td><strong>' + label + '</strong><br><small style="color:var(--text-light)">' + key + '</small></td>';
+      html += '<td><input class="form-soft" style="width:100%;font-size:0.82rem" data-key="' + key + '" value="' + val.replace(/"/g, '&quot;') + '" onchange="INI_SETTINGS[this.dataset.key]=this.value"></td>';
+      html += '</tr>';
+    });
+    body.innerHTML = html || '<tr><td colspan="2" style="text-align:center;padding:16px;color:var(--text-light)">No settings found</td></tr>';
+  })
+  .catch(function(err) {
+    body.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:16px;color:#ef4444">Error: ' + err.message + '</td></tr>';
+  });
+}
+
+function saveIniSettings() {
+  var version = document.getElementById('settingsVersion').value;
+  fetch('/api/php/ini/' + version, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ settings: INI_SETTINGS })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      whpToast('Settings saved', 'PHP ' + version + ' php.ini updated', 'success');
+    } else {
+      whpToast('Error', data.error, 'error');
+    }
+  })
+  .catch(function(err) { whpToast('Error', err.message, 'error'); });
+}
+
+function viewSettings(version) {
+  document.getElementById('settingsVersion').value = version;
+  loadIniSettings(version);
+  var tab = new bootstrap.Tab(document.querySelector('a[href="#tabSettings"]'));
+  tab.show();
+}
+
+function loadModules(version) {
+  var grid = document.getElementById('modulesGrid');
+  grid.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-light)">Loading...</div>';
+
+  fetch('/api/php/extensions/' + version)
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var mods = data.extensions || [];
+    var html = '';
+    mods.forEach(function(mod) {
+      html += '<div class="col-md-3 col-sm-4 mb-2">';
+      html += '<span class="badge-soft success" style="width:100%;text-align:left;padding:6px 10px;font-size:0.78rem"><i class="fa-solid fa-check"></i> ' + mod + '</span>';
+      html += '</div>';
+    });
+    grid.innerHTML = html || '<div style="text-align:center;padding:16px;color:var(--text-light)">No modules found</div>';
+  })
+  .catch(function(err) {
+    grid.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444">Error: ' + err.message + '</div>';
+  });
+}
+
+function refreshVersions() {
+  location.reload();
+}
+
+function installIonCube() {
+  whpConfirm('Install ionCube Loader?', 'This will download and enable ionCube Loader for PHP.', function() {
+    whpToast('Installing...', 'Downloading ionCube Loader...', 'info');
+    fetch('/api/php/ioncube/install', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        whpToast('ionCube Installed', 'Version: ' + (data.version || 'unknown'), 'success');
+        setTimeout(function() { location.reload(); }, 1500);
+      } else {
+        whpToast('Install Failed', data.error, 'error');
+      }
+    })
+    .catch(function(err) { whpToast('Error', err.message, 'error'); });
+  }, 'Install');
+}
+
+function uninstallIonCube() {
+  whpConfirm('Disable ionCube Loader?', 'ionCube will be disabled.', function() {
+    fetch('/api/php/ioncube/uninstall', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        whpToast('ionCube Disabled', '', 'success');
+        setTimeout(function() { location.reload(); }, 1500);
+      } else {
+        whpToast('Error', data.error, 'error');
+      }
+    })
+    .catch(function(err) { whpToast('Error', err.message, 'error'); });
+  }, 'Disable');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadIniSettings(document.getElementById('settingsVersion').value);
+});
+</script>

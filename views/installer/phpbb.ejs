@@ -1,0 +1,191 @@
+<div class="content-page">
+    <div class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="page-title-box">
+                        <h4 class="page-title"><i class="ri-discuss-line"></i> phpBB Installer</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Install phpBB</h5>
+
+                            <form id="phpbbInstallForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Select Domain <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="pbDomain" required>
+                                        <option value="">-- Pilih Domain --</option>
+                                        <% if (websites.length === 0) { %>
+                                            <option value="" disabled>No websites found</option>
+                                        <% } else { %>
+                                            <% websites.forEach(function(site) { %>
+                                                <option value="<%= site.label %>"
+                                                    data-installed="<%= site.phpbbInstalled %>"
+                                                    data-version="<%= site.phpbbVersion || '' %>">
+                                                    <%= site.label %>
+                                                    <% if (site.site_type === 'subdomain') { %> <span class="badge bg-info" style="font-size:0.65rem">subdomain</span><% } %>
+                                                    <% if (site.phpbbInstalled) { %>
+                                                        <span class="badge bg-success">phpBB</span>
+                                                    <% } %>
+                                                </option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                </div>
+
+                                <div id="pbStatus" class="mb-3" style="display:none;">
+                                    <div class="alert alert-info">
+                                        <i class="ri-information-line"></i>
+                                        <span id="pbStatusText"></span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Forum Name</label>
+                                        <input type="text" class="form-control" id="pbSiteName" placeholder="My Forum" value="My Forum">
+                                    </div>
+                                </div>
+
+                                <hr>
+                                <h6 class="mb-3">Database Configuration</h6>
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Database Name</label>
+                                        <input type="text" class="form-control" id="pbDbName" placeholder="Auto: phpbb_domain_com">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Database User</label>
+                                        <input type="text" class="form-control" id="pbDbUser" placeholder="Same as DB name">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Database Password</label>
+                                        <input type="text" class="form-control" id="pbDbPassword" placeholder="Auto-generated">
+                                    </div>
+                                </div>
+
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary" id="btnInstallPb">
+                                        <i class="ri-download-line"></i> Install phpBB
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Installed phpBB</h5>
+                            <div>
+                                <% let hasInstalled = false; %>
+                                <% websites.forEach(function(site) { %>
+                                    <% if (site.phpbbInstalled) { %>
+                                        <% hasInstalled = true; %>
+                                        <div class="d-flex align-items-center mb-3 p-2 border rounded">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-0"><%= site.label %></h6>
+                                                <small class="text-muted"><%= site.phpbbVersion || 'phpBB' %></small>
+                                            </div>
+                                            <div>
+                                                <a href="http://<%= site.label %>/install/" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="ri-external-link-line"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deletePb('<%= site.label %>')">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                <% }); %>
+                                <% if (!hasInstalled) { %>
+                                    <div class="text-center text-muted py-4">
+                                        <i class="ri-discuss-line fs-1"></i>
+                                        <p class="mt-2">No phpBB installed yet</p>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('pbDomain').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const installed = opt.dataset.installed === 'true';
+    const status = document.getElementById('pbStatus');
+    const statusText = document.getElementById('pbStatusText');
+    if (installed) {
+        status.style.display = 'block';
+        status.className = 'mb-3 alert alert-warning';
+        statusText.innerHTML = '<i class="ri-alert-line"></i> phpBB is already installed. Reinstalling will overwrite files.';
+    } else {
+        status.style.display = 'none';
+    }
+    const domain = this.value;
+    if (domain) document.getElementById('pbDbName').placeholder = 'phpbb_' + domain.replace(/\./g, '_');
+});
+
+document.getElementById('phpbbInstallForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const domain = document.getElementById('pbDomain').value;
+    if (!domain) return Swal.fire('Error', 'Please select a domain', 'error');
+    
+    const btn = document.getElementById('btnInstallPb');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Installing...';
+    
+    try {
+        const res = await fetch('/api/installer/phpbb/install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                domain,
+                siteName: document.getElementById('pbSiteName').value,
+                dbName: document.getElementById('pbDbName').value || undefined,
+                dbUser: document.getElementById('pbDbUser').value || undefined,
+                dbPassword: document.getElementById('pbDbPassword').value || undefined
+            })
+        });
+        const data = await res.json();
+        if (data.error) {
+            Swal.fire('Error', data.error, 'error');
+        } else {
+            let msg = 'phpBB files installed!<br><br>Complete installation at:<br><a href="' + data.installUrl + '" target="_blank">' + data.installUrl + '</a>';
+            if (data.db) {
+                msg += '<br><br><b>Database:</b> ' + data.db.name;
+                msg += '<br><b>DB User:</b> ' + data.db.user;
+                msg += '<br><b>DB Password:</b> ' + data.db.password;
+            }
+            Swal.fire({ title: 'Success!', html: msg, icon: 'success', confirmButtonText: 'OK' })
+                .then(() => location.reload());
+        }
+    } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ri-download-line"></i> Install phpBB';
+    }
+});
+
+async function deletePb(domain) {
+    const result = await Swal.fire({ title: 'Delete phpBB?', text: 'This will delete all files from ' + domain, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Yes, delete' });
+    if (result.isConfirmed) {
+        const res = await fetch('/api/installer/phpbb/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domain }) });
+        const data = await res.json();
+        if (data.error) Swal.fire('Error', data.error, 'error');
+        else Swal.fire('Deleted!', 'phpBB has been removed.', 'success').then(() => location.reload());
+    }
+}
+</script>

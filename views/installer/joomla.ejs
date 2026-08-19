@@ -1,0 +1,191 @@
+<div class="content-page">
+    <div class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="page-title-box">
+                        <h4 class="page-title"><i class="ri-layout-line"></i> Joomla Installer</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Install Joomla</h5>
+
+                            <form id="joomlaInstallForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Select Domain <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="joDomain" required>
+                                        <option value="">-- Pilih Domain --</option>
+                                        <% if (websites.length === 0) { %>
+                                            <option value="" disabled>No websites found</option>
+                                        <% } else { %>
+                                            <% websites.forEach(function(site) { %>
+                                                <option value="<%= site.label %>"
+                                                    data-installed="<%= site.joomlaInstalled %>"
+                                                    data-version="<%= site.joomlaVersion || '' %>">
+                                                    <%= site.label %>
+                                                    <% if (site.site_type === 'subdomain') { %> <span class="badge bg-info" style="font-size:0.65rem">subdomain</span><% } %>
+                                                    <% if (site.joomlaInstalled) { %>
+                                                        <span class="badge bg-success">Joomla</span>
+                                                    <% } %>
+                                                </option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                </div>
+
+                                <div id="joStatus" class="mb-3" style="display:none;">
+                                    <div class="alert alert-info">
+                                        <i class="ri-information-line"></i>
+                                        <span id="joStatusText"></span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Site Name</label>
+                                        <input type="text" class="form-control" id="joSiteName" placeholder="My Joomla Site" value="Joomla Site">
+                                    </div>
+                                </div>
+
+                                <hr>
+                                <h6 class="mb-3">Database Configuration</h6>
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Database Name</label>
+                                        <input type="text" class="form-control" id="joDbName" placeholder="Auto: joomla_domain_com">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Database User</label>
+                                        <input type="text" class="form-control" id="joDbUser" placeholder="Same as DB name">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Database Password</label>
+                                        <input type="text" class="form-control" id="joDbPassword" placeholder="Auto-generated">
+                                    </div>
+                                </div>
+
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary" id="btnInstallJo">
+                                        <i class="ri-download-line"></i> Install Joomla
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Installed Joomla</h5>
+                            <div>
+                                <% let hasInstalled = false; %>
+                                <% websites.forEach(function(site) { %>
+                                    <% if (site.joomlaInstalled) { %>
+                                        <% hasInstalled = true; %>
+                                        <div class="d-flex align-items-center mb-3 p-2 border rounded">
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-0"><%= site.label %></h6>
+                                                <small class="text-muted"><%= site.joomlaVersion || 'Joomla' %></small>
+                                            </div>
+                                            <div>
+                                                <a href="http://<%= site.label %>" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="ri-external-link-line"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteJo('<%= site.label %>')">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                <% }); %>
+                                <% if (!hasInstalled) { %>
+                                    <div class="text-center text-muted py-4">
+                                        <i class="ri-layout-line fs-1"></i>
+                                        <p class="mt-2">No Joomla installed yet</p>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('joDomain').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const installed = opt.dataset.installed === 'true';
+    const status = document.getElementById('joStatus');
+    const statusText = document.getElementById('joStatusText');
+    if (installed) {
+        status.style.display = 'block';
+        status.className = 'mb-3 alert alert-warning';
+        statusText.innerHTML = '<i class="ri-alert-line"></i> Joomla is already installed. Reinstalling will overwrite files.';
+    } else {
+        status.style.display = 'none';
+    }
+    const domain = this.value;
+    if (domain) document.getElementById('joDbName').placeholder = 'joomla_' + domain.replace(/\./g, '_');
+});
+
+document.getElementById('joomlaInstallForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const domain = document.getElementById('joDomain').value;
+    if (!domain) return Swal.fire('Error', 'Please select a domain', 'error');
+    
+    const btn = document.getElementById('btnInstallJo');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Installing...';
+    
+    try {
+        const res = await fetch('/api/installer/joomla/install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                domain,
+                siteName: document.getElementById('joSiteName').value,
+                dbName: document.getElementById('joDbName').value || undefined,
+                dbUser: document.getElementById('joDbUser').value || undefined,
+                dbPassword: document.getElementById('joDbPassword').value || undefined
+            })
+        });
+        const data = await res.json();
+        if (data.error) {
+            Swal.fire('Error', data.error, 'error');
+        } else {
+            let msg = 'Joomla files installed!<br><br>Complete installation at:<br><a href="' + data.installUrl + '" target="_blank">' + data.installUrl + '</a>';
+            if (data.db) {
+                msg += '<br><br><b>Database:</b> ' + data.db.name;
+                msg += '<br><b>DB User:</b> ' + data.db.user;
+                msg += '<br><b>DB Password:</b> ' + data.db.password;
+            }
+            Swal.fire({ title: 'Success!', html: msg, icon: 'success', confirmButtonText: 'OK' })
+                .then(() => location.reload());
+        }
+    } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ri-download-line"></i> Install Joomla';
+    }
+});
+
+async function deleteJo(domain) {
+    const result = await Swal.fire({ title: 'Delete Joomla?', text: 'This will delete all files from ' + domain, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Yes, delete' });
+    if (result.isConfirmed) {
+        const res = await fetch('/api/installer/joomla/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domain }) });
+        const data = await res.json();
+        if (data.error) Swal.fire('Error', data.error, 'error');
+        else Swal.fire('Deleted!', 'Joomla has been removed.', 'success').then(() => location.reload());
+    }
+}
+</script>

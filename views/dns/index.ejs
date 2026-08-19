@@ -1,0 +1,102 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper" style="flex-direction:column">
+    <div class="pma-nav">
+      <span class="pma-nav-title"><i class="fa-solid fa-earth-americas"></i> DNS Manager</span>
+      <button class="btn btn-sm btn-primary" onclick="showAddZoneModal()"><i class="fa-solid fa-plus"></i> Add Zone</button>
+      <button class="btn btn-sm btn-outline" onclick="syncFromPowerDNS()"><i class="fa-solid fa-sync"></i> Sync from PowerDNS</button>
+    </div>
+    <div class="pma-content">
+      <div class="pma-box">
+        <div class="pma-box-header">
+          <h3><i class="fa-solid fa-list"></i> Zones (<%= zones.length %>)</h3>
+        </div>
+        <table class="pma-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Domain</th>
+              <th style="width:100px">Mode</th>
+              <th style="width:80px">Status</th>
+              <th style="width:120px">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (zones.length === 0) { %>
+            <tr><td colspan="5" class="text-center text-muted p-4">No DNS zones configured</td></tr>
+            <% } else { %>
+            <% zones.forEach(function(z, i) { %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><a href="/dns/<%= z.id %>" class="pma-db-link"><i class="fa-solid fa-earth-americas"></i> <%= z.name %></a></td>
+              <td><span class="badge bg-info"><%= z.mode %></span></td>
+              <td><span class="badge bg-success"><%= z.status %></span></td>
+              <td class="pma-actions">
+                <a href="/dns/<%= z.id %>" class="btn btn-xs btn-outline" title="Manage"><i class="fa-solid fa-pen"></i></a>
+                <button class="btn btn-xs btn-outline btn-danger" title="Delete" onclick="deleteZone(<%= z.id %>, '<%= z.name %>')"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+            <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal fade" id="addZoneModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-plus"></i> Add DNS Zone</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Domain Name</label>
+          <input type="text" class="form-control" id="zoneName" placeholder="example.com">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">DNS Mode</label>
+          <select class="form-select" id="zoneMode">
+            <option value="powerdns">PowerDNS (Local)</option>
+            <option value="cloudflare">Cloudflare</option>
+            <option value="external">External</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="createZone()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showAddZoneModal() { new bootstrap.Modal(document.getElementById('addZoneModal')).show(); }
+function createZone() {
+    var name = document.getElementById('zoneName').value.trim();
+    var mode = document.getElementById('zoneMode').value;
+    if (!name) return whpToast('Warning', 'Domain required', 'warning');
+    fetch('/dns', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify({ name: name, mode: mode }) })
+    .then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Created','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+function deleteZone(id, name) {
+    whpConfirm('Delete?', 'Delete zone <b>' + name + '</b>? All records will be lost.', function() {
+        fetch('/dns/' + id, { method: 'DELETE', credentials: 'include' })
+        .then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Deleted','','success');setTimeout(function(){location.reload()},500)}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+function syncFromPowerDNS() {
+    fetch('/dns/sync', { method: 'POST', credentials: 'include' })
+    .then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Synced', d.imported + ' zone(s) imported','success');setTimeout(function(){location.reload()},1000)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+</script>

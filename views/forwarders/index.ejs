@@ -1,0 +1,102 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper" style="flex-direction:column">
+    <div class="pma-nav">
+      <span class="pma-nav-title"><i class="fa-solid fa-share"></i> Email Forwarders</span>
+      <button class="btn btn-sm btn-primary" onclick="showAddModal()"><i class="fa-solid fa-plus"></i> Add Forwarder</button>
+    </div>
+
+    <div class="pma-content">
+      <div class="pma-box">
+        <div class="pma-box-header">
+          <h3><i class="fa-solid fa-list"></i> Forwarders (<%= forwarders.length %>)</h3>
+        </div>
+        <table class="pma-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Source Email</th>
+              <th><i class="fa-solid fa-arrow-right"></i> Forwards To</th>
+              <th style="width:80px">Status</th>
+              <th style="width:80px">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (forwarders.length === 0) { %>
+            <tr><td colspan="5" class="text-center text-muted p-4">No email forwarders configured</td></tr>
+            <% } else { %>
+            <% forwarders.forEach(function(fwd, i) { %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><i class="fa-solid fa-envelope" style="color:var(--primary)"></i> <%= fwd.source_email || '-' %></td>
+              <td><i class="fa-solid fa-arrow-right" style="color:#10b981;font-size:0.7rem"></i> <%= fwd.destination %></td>
+              <td><span class="badge-soft success">Active</span></td>
+              <td class="pma-actions">
+                <button class="btn btn-xs btn-outline btn-danger" onclick="removeForwarder(<%= fwd.id %>)"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+            <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-plus"></i> Add Email Forwarder</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Source Email</label>
+          <select class="form-select" id="addEmailId">
+            <% emailAccounts.forEach(function(ea) { %>
+            <option value="<%= ea.id %>"><%= ea.email %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Forward To</label>
+          <input type="email" class="form-control" id="addDestination" placeholder="someone@gmail.com">
+          <div style="font-size:0.7rem;color:var(--text-light);margin-top:4px">Email address where messages will be forwarded</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="createForwarder()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showAddModal() { new bootstrap.Modal(document.getElementById('addModal')).show(); }
+
+function createForwarder() {
+    var emailId = document.getElementById('addEmailId').value;
+    var dest = document.getElementById('addDestination').value.trim();
+    if (!dest) return whpToast('Warning', 'Destination required', 'warning');
+
+    fetch('/email-forwarders', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+        body: JSON.stringify({ email_account_id: emailId, destination: dest })
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Created','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+
+function removeForwarder(id) {
+    whpConfirm('Delete?', 'Remove this forwarder?', function() {
+        fetch('/email-forwarders/' + id, { method: 'DELETE', credentials: 'include' })
+        .then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Deleted','','success');setTimeout(function(){location.reload()},500)}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+</script>

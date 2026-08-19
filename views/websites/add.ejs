@@ -1,0 +1,129 @@
+<main class="page-content">
+    <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <a href="/websites">Websites</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Add Website</span></div>
+    <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+      <div>
+        <h1><i class="fa-solid fa-plus-circle"></i> Add Website</h1>
+        <p class="subtitle">Create a new website hosting account.</p>
+      </div>
+      <a href="/websites" class="btn-ghost nav-link "><i class="fa-solid fa-arrow-left"></i> Back</a>
+    </div>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+    <div class="card-soft mb-3" style="border-left:3px solid #ef4444">
+      <div class="card-body" style="padding:12px 16px">
+        <i class="fa-solid fa-circle-exclamation" style="color:#ef4444"></i> <%= error %>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="card-soft">
+          <div class="card-head"><h3>Website Configuration</h3></div>
+          <div class="card-body">
+            <form action="/websites" method="POST">
+              <div class="mb-3">
+                <label class="form-label-soft">Domain Name <span style="color:#ef4444">*</span></label>
+                <input type="text" class="form-soft" id="domain" name="domain" placeholder="example.com" required>
+                <div style="font-size:0.75rem;color:var(--text-light);margin-top:4px">Enter the domain name without http:// or www.</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label-soft">Document Root</label>
+                <div style="display:flex;gap:0">
+                  <span style="padding:8px 12px;background:var(--bg-secondary);border:1px solid var(--border);border-right:none;border-radius:6px 0 0 6px;font-size:0.82rem;color:var(--text-light)">/home/public_html/</span>
+                  <input type="text" class="form-soft" id="doc-root-slug" placeholder="example.com" required style="border-radius:0 6px 6px 0">
+                  <input type="hidden" id="document_root" name="document_root">
+                </div>
+                <div style="font-size:0.75rem;color:var(--text-light);margin-top:4px">Files will be served from this directory.</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label-soft">PHP Version</label>
+                <select class="form-soft" id="php_version" name="php_version">
+                  <option value="8.2" selected>PHP 8.2</option>
+                  <option value="8.1">PHP 8.1</option>
+                  <option value="8.0">PHP 8.0</option>
+                  <option value="7.4">PHP 7.4</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="create-index" checked>
+                  <label class="form-check-label" for="create-index" style="font-size:0.85rem">Create default index.html</label>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:8px">
+                <button type="submit" class="btn-primary-soft"><i class="fa-solid fa-plus"></i> Create Website</button>
+                <a href="/websites" class="btn-ghost">Cancel</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card-soft">
+          <div class="card-head"><h3>What happens?</h3></div>
+          <div class="card-body">
+            <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+              <span style="width:32px;height:32px;border-radius:8px;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.85rem"><i class="fa-solid fa-folder-plus"></i></span>
+              <div>
+                <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Create Directory</div>
+                <div style="font-size:0.75rem;color:var(--text-light)">Document root folder will be created at /home/public_html/</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+              <span style="width:32px;height:32px;border-radius:8px;background:#10b98115;color:#10b981;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.85rem"><i class="fa-solid fa-file-code"></i></span>
+              <div>
+                <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Default Index</div>
+                <div style="font-size:0.75rem;color:var(--text-light)">A default index.html page will be created</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+              <span style="width:32px;height:32px;border-radius:8px;background:#f59e0b15;color:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.85rem"><i class="fa-solid fa-server"></i></span>
+              <div>
+                <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px">OLS Virtual Host</div>
+                <div style="font-size:0.75rem;color:var(--text-light)">OpenLiteSpeed vhost config will be generated</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <span style="width:32px;height:32px;border-radius:8px;background:#6366f115;color:#6366f1;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.85rem"><i class="fa-solid fa-rotate"></i></span>
+              <div>
+                <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Reload OLS</div>
+                <div style="font-size:0.75rem;color:var(--text-light)">OLS will be reloaded to apply the changes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</main>
+
+<script>
+document.getElementById('domain').addEventListener('input', function() {
+    document.getElementById('doc-root-slug').value = this.value;
+});
+
+document.querySelector('form').addEventListener('submit', function() {
+    var slug = document.getElementById('doc-root-slug').value;
+    document.getElementById('document_root').value = '/home/public_html/' + slug;
+});
+
+fetch('/api/php/versions', { credentials: 'include' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var sel = document.getElementById('php_version');
+        if (!sel || !data.versions || data.versions.length === 0) return;
+        sel.innerHTML = '';
+        data.versions.forEach(function(v) {
+            var opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = 'PHP ' + v;
+            if (v === '8.2') opt.selected = true;
+            sel.appendChild(opt);
+        });
+    });
+</script>

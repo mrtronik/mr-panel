@@ -1,0 +1,364 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Google Drive Backup</span></div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div><h1><i class="fa-brands fa-google"></i> Google Drive Backup</h1><p class="subtitle">Backup & restore panel data ke Google Drive</p></div>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+  <div class="card-soft mb-3" style="border-left:4px solid #22c55e"><div class="card-body" style="padding:12px 16px"><i class="fa-solid fa-check-circle" style="color:#22c55e"></i> <%= success %></div></div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+  <div class="card-soft mb-3" style="border-left:4px solid #ef4444"><div class="card-body" style="padding:12px 16px"><i class="fa-solid fa-circle-exclamation" style="color:#ef4444"></i> <%= error %></div></div>
+  <% } %>
+
+  <% if (!account || account.status !== 'active') { %>
+  <div class="card-soft mb-4">
+    <div class="card-body text-center py-5">
+      <i class="fa-brands fa-google" style="font-size:4rem;color:#4285F4"></i>
+      <h4 class="mt-3">Connect Google Drive</h4>
+      <p style="color:var(--text-light)">Hubungkan akun Google Drive Anda untuk backup dan restore data panel</p>
+      <button class="btn-primary-soft" onclick="connectGDrive()"><i class="fa-brands fa-google"></i> Connect Google Drive</button>
+      <p style="font-size:0.78rem;color:var(--text-light);margin-top:12px">Perlu Google Cloud Project dengan Drive API enabled. <a href="https://console.cloud.google.com" target="_blank">Buka Console</a></p>
+    </div>
+  </div>
+
+  <% } else { %>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card-soft">
+        <div class="card-body text-center">
+          <i class="fa-brands fa-google" style="font-size:2rem;color:#4285F4"></i>
+          <h5 class="mt-2 mb-0">Connected</h5>
+          <small style="color:var(--text-light)"><%= account.email %></small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-soft">
+        <div class="card-body text-center">
+          <i class="fa-solid fa-hard-drive" style="font-size:2rem;color:var(--primary)"></i>
+          <h5 class="mt-2 mb-0" id="storageUsed">-</h5>
+          <small style="color:var(--text-light)">Storage Used</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card-soft">
+        <div class="card-body text-center">
+          <i class="fa-solid fa-file-zipper" style="font-size:2rem;color:#22c55e"></i>
+          <h5 class="mt-2 mb-0"><%= backups.length %></h5>
+          <small style="color:var(--text-light)">Total Backups</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <div class="card-soft" style="border-top:3px solid var(--primary)">
+        <div class="card-body text-center">
+          <i class="fa-solid fa-folder" style="font-size:1.5rem;color:var(--primary)"></i>
+          <h6 class="mt-2 mb-1">Files Only</h6>
+          <small style="color:var(--text-light)">Website files</small>
+          <br><button class="btn-primary-soft" style="margin-top:8px;padding:4px 12px;font-size:0.78rem" onclick="createBackup('files')"><i class="fa-solid fa-cloud-arrow-up"></i> Backup</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-soft" style="border-top:3px solid #22c55e">
+        <div class="card-body text-center">
+          <i class="fa-solid fa-database" style="font-size:1.5rem;color:#22c55e"></i>
+          <h6 class="mt-2 mb-1">Database</h6>
+          <small style="color:var(--text-light)">MySQL databases</small>
+          <br><button class="btn-primary-soft" style="margin-top:8px;padding:4px 12px;font-size:0.78rem;background:#22c55e" onclick="createBackup('database')"><i class="fa-solid fa-cloud-arrow-up"></i> Backup</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-soft" style="border-top:3px solid #f59e0b">
+        <div class="card-body text-center">
+          <i class="fa-solid fa-envelope" style="font-size:1.5rem;color:#f59e0b"></i>
+          <h6 class="mt-2 mb-1">Email</h6>
+          <small style="color:var(--text-light)">Email accounts</small>
+          <br><button class="btn-primary-soft" style="margin-top:8px;padding:4px 12px;font-size:0.78rem;background:#f59e0b" onclick="createBackup('email')"><i class="fa-solid fa-cloud-arrow-up"></i> Backup</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-soft" style="border-top:3px solid #ef4444">
+        <div class="card-body text-center">
+          <i class="fa-solid fa-layer-group" style="font-size:1.5rem;color:#ef4444"></i>
+          <h6 class="mt-2 mb-1">Full Backup</h6>
+          <small style="color:var(--text-light)">Semua data</small>
+          <br><button class="btn-primary-soft" style="margin-top:8px;padding:4px 12px;font-size:0.78rem;background:#ef4444" onclick="createBackup('all')"><i class="fa-solid fa-cloud-arrow-up"></i> Backup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-soft mb-3">
+    <div class="card-head d-flex justify-content-between align-items-center">
+      <h3><i class="fa-solid fa-clock"></i> Scheduled Backups</h3>
+      <button class="btn-ghost" style="font-size:0.78rem" onclick="loadSchedules()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+    </div>
+    <div class="card-body">
+      <div class="row g-2 mb-3 align-items-end">
+        <div class="col-md-3">
+          <label style="font-size:0.78rem;font-weight:600">Schedule Name</label>
+          <input type="text" id="schedName" class="form-soft" placeholder="e.g. Nightly Full" value="Full Backup">
+        </div>
+        <div class="col-md-2">
+          <label style="font-size:0.78rem;font-weight:600">Type</label>
+          <select id="schedType" class="form-soft">
+            <option value="all">Full</option>
+            <option value="files">Files</option>
+            <option value="database">Database</option>
+            <option value="email">Email</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label style="font-size:0.78rem;font-weight:600">Cron Expression</label>
+          <div class="d-flex gap-2">
+            <input type="text" id="schedCron" class="form-soft flex-grow-1" placeholder="0 2 * * *" value="0 2 * * *">
+            <select id="schedPreset" class="form-soft" style="width:auto" onchange="applyPreset()">
+              <option value="">Preset...</option>
+              <option value="0 2 * * *">Tiap malam jam 2</option>
+              <option value="0 */6 * * *">Tiap 6 jam</option>
+              <option value="0 0 * * *">Tiap tengah malam</option>
+              <option value="0 2 * * 0">Tiap Minggu jam 2</option>
+              <option value="0 2 1 * *">Tiap bulan (tanggal 1 jam 2)</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <button class="btn-primary-soft w-100" onclick="addSchedule()"><i class="fa-solid fa-plus"></i> Add Schedule</button>
+        </div>
+      </div>
+      <p style="font-size:0.78rem;color:var(--text-light);margin:0 0 16px">Cron format: <code>menit jam tanggal bulan hari</code>. Contoh: <code>0 2 * * *</code> = tiap jam 2 pagi. <a href="https://crontab.guru" target="_blank">Buat cron online</a></p>
+
+      <div id="scheduleList">
+        <div style="text-align:center;padding:16px;color:var(--text-light)"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
+      </div>
+
+      <div class="mt-3 p-3" style="background:var(--bg-secondary);border-radius:8px">
+        <h6 style="font-size:0.82rem;margin-bottom:8px"><i class="fa-solid fa-terminal"></i> Manual Cron Setup (VPS)</h6>
+        <p style="font-size:0.78rem;color:var(--text-light);margin-bottom:8px">Atau login ke VPS lalu jalankan crontab. Setiap schedule bisa dipanggil via API:</p>
+        <div class="d-flex gap-2 mb-2">
+          <input type="text" class="form-soft flex-grow-1" value="curl -s -X POST https://live.mrstudio.web.id:1708/api/backup/gdrive/cron-run/SCHEDULE_ID -H 'X-Api-Key: YOUR_KEY' -H 'X-Api-Secret: YOUR_SECRET'" readonly style="font-size:0.75rem">
+          <button class="btn-ghost" style="font-size:0.75rem" onclick="copyCron(this)"><i class="fa-solid fa-copy"></i></button>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text-light);margin:0"><code>crontab -e</code> → paste command → ganti <code>SCHEDULE_ID</code> dan API credentials</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-soft mb-3">
+    <div class="card-head d-flex justify-content-between align-items-center"><h3><i class="fa-solid fa-clock-rotate-left"></i> Backup History</h3><button class="btn-ghost" style="font-size:0.78rem" onclick="location.reload()"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+    <div class="card-body p-0">
+      <table class="table-soft">
+        <thead><tr><th>Filename</th><th>Type</th><th>Size</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <% if (backups.length === 0) { %>
+          <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-light)">Belum ada backup</td></tr>
+          <% } else { %>
+          <% backups.forEach(function(backup) { %>
+          <tr>
+            <td><code style="font-size:0.82rem"><%= backup.filename %></code></td>
+            <td><span class="badge-soft <%= backup.backup_type === 'all' ? 'danger' : backup.backup_type === 'database' ? 'success' : backup.backup_type === 'email' ? 'warning' : 'primary' %>"><%= backup.backup_type %></span></td>
+            <td><%= backup.file_size_formatted %></td>
+            <td><small style="color:var(--text-light)"><%= new Date(backup.created_at).toLocaleString() %></small></td>
+            <td><span class="badge-soft <%= backup.status === 'completed' ? 'success' : backup.status === 'failed' ? 'danger' : 'info' %>"><%= backup.status %></span></td>
+            <td>
+              <% if (backup.status === 'completed') { %>
+              <button class="btn-ghost" style="padding:4px 8px;font-size:0.78rem;color:#22c55e" onclick="restoreBackup(<%= backup.id %>)" title="Restore"><i class="fa-solid fa-download"></i></button>
+              <button class="btn-ghost" style="padding:4px 8px;font-size:0.78rem;color:#ef4444" onclick="deleteBackup(<%= backup.id %>)" title="Delete"><i class="fa-solid fa-trash"></i></button>
+              <% } %>
+            </td>
+          </tr>
+          <% }); %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-4"><button class="btn-ghost w-100" onclick="testConnection()"><i class="fa-solid fa-wifi"></i> Test Connection</button></div>
+    <div class="col-md-4"><button class="btn-ghost w-100" onclick="loadStorageInfo()"><i class="fa-solid fa-hard-drive"></i> Check Storage</button></div>
+    <div class="col-md-4"><button class="btn-ghost w-100" style="color:#ef4444" onclick="disconnect()"><i class="fa-solid fa-link-slash"></i> Disconnect</button></div>
+  </div>
+
+  <% } %>
+</main>
+
+<div id="loadingOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--bg-primary);border-radius:12px;padding:30px 40px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.2)">
+    <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem"></div>
+    <h5 id="loadingTitle" style="margin:0 0 8px">Loading...</h5>
+    <p id="loadingText" style="margin:0;color:var(--text-light);font-size:0.9rem"></p>
+  </div>
+</div>
+
+<script>
+function showLoading(t, x) {
+  document.getElementById('loadingTitle').textContent = t || 'Loading...';
+  document.getElementById('loadingText').textContent = x || '';
+  document.getElementById('loadingOverlay').style.display = 'flex';
+}
+function hideLoading() { document.getElementById('loadingOverlay').style.display = 'none'; }
+
+function copyCron(btn) {
+  var input = btn.parentElement.querySelector('input');
+  navigator.clipboard.writeText(input.value).then(function() {
+    btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+    setTimeout(function() { btn.innerHTML = '<i class="fa-solid fa-copy"></i>'; }, 1500);
+  });
+}
+
+function applyPreset() {
+  var sel = document.getElementById('schedPreset');
+  if (sel.value) document.getElementById('schedCron').value = sel.value;
+}
+
+function loadSchedules() {
+  var el = document.getElementById('scheduleList');
+  el.innerHTML = '<div style="text-align:center;padding:16px"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+  fetch('/api/backup/gdrive/schedules')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (!d.success) { el.innerHTML = '<p style="color:var(--text-light);text-align:center">Error loading schedules</p>'; return; }
+    var schedules = d.data;
+    if (schedules.length === 0) {
+      el.innerHTML = '<p style="text-align:center;padding:16px;color:var(--text-light)">Belum ada scheduled backup</p>';
+      return;
+    }
+    var html = '<table class="table-soft"><thead><tr><th>Name</th><th>Type</th><th>Cron</th><th>Schedule</th><th>Last Run</th><th>Next Run</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+    schedules.forEach(function(s) {
+      var typeColor = s.backup_type === 'all' ? 'danger' : s.backup_type === 'database' ? 'success' : s.backup_type === 'email' ? 'warning' : 'primary';
+      var statusBadge = s.status === 'active' ? 'success' : s.status === 'paused' ? 'warning' : 'danger';
+      var lastRun = s.last_run ? new Date(s.last_run).toLocaleString() : '-';
+      var lastStatus = s.last_status === 'success' ? ' <i class="fa-solid fa-check-circle" style="color:#22c55e"></i>' : s.last_status === 'failed' ? ' <i class="fa-solid fa-circle-xmark" style="color:#ef4444"></i>' : '';
+      html += '<tr>';
+      html += '<td><strong>' + escHtml(s.name) + '</strong><br><small style="color:var(--text-light)">ID: ' + s.id + '</small></td>';
+      html += '<td><span class="badge-soft ' + typeColor + '">' + s.backup_type + '</span></td>';
+      html += '<td><code style="font-size:0.78rem">' + escHtml(s.cron_expression) + '</code></td>';
+      html += '<td><small>' + escHtml(s.cronHuman) + '</small></td>';
+      html += '<td><small>' + lastRun + lastStatus + '</small></td>';
+      html += '<td><small>' + (s.nextRunFormatted || '-') + '</small></td>';
+      html += '<td><span class="badge-soft ' + statusBadge + '">' + s.status + '</span></td>';
+      html += '<td style="white-space:nowrap">';
+      if (s.status === 'active') {
+        html += '<button class="btn-ghost" style="padding:4px 8px;font-size:0.78rem;color:#f59e0b" onclick="toggleSchedule(' + s.id + ',\'paused\')" title="Pause"><i class="fa-solid fa-pause"></i></button> ';
+      } else {
+        html += '<button class="btn-ghost" style="padding:4px 8px;font-size:0.78rem;color:#22c55e" onclick="toggleSchedule(' + s.id + ',\'active\')" title="Resume"><i class="fa-solid fa-play"></i></button> ';
+      }
+      html += '<button class="btn-ghost" style="padding:4px 8px;font-size:0.78rem;color:var(--primary)" onclick="runSchedule(' + s.id + ')" title="Run Now"><i class="fa-solid fa-play"></i></button> ';
+      html += '<button class="btn-ghost" style="padding:4px 8px;font-size:0.78rem;color:#ef4444" onclick="deleteSchedule(' + s.id + ')" title="Delete"><i class="fa-solid fa-trash"></i></button>';
+      html += '</td></tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }).catch(function() { el.innerHTML = '<p style="color:var(--text-light);text-align:center">Gagal load</p>'; });
+}
+
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function addSchedule() {
+  var name = document.getElementById('schedName').value.trim();
+  var type = document.getElementById('schedType').value;
+  var cron = document.getElementById('schedCron').value.trim();
+  if (!name || !cron) { alert('Isi nama dan cron'); return; }
+  showLoading('Creating...', 'Menambah schedule');
+  fetch('/api/backup/gdrive/schedules', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:name,type:type,cron:cron}) })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { hideLoading(); if (d.success) { alert('Schedule ditambahkan!'); loadSchedules(); } else alert('Gagal: ' + d.message); })
+  .catch(function(e) { hideLoading(); alert(e.message); });
+}
+
+function toggleSchedule(id, status) {
+  fetch('/api/backup/gdrive/schedules/' + id, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:status}) })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { if (d.success) loadSchedules(); else alert(d.message); });
+}
+
+function deleteSchedule(id) {
+  if (!confirm('Hapus schedule ini?')) return;
+  fetch('/api/backup/gdrive/schedules/' + id, { method:'DELETE' })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { if (d.success) loadSchedules(); else alert(d.message); });
+}
+
+function runSchedule(id) {
+  if (!confirm('Jalankan backup sekarang?')) return;
+  showLoading('Running...', 'Backup sedang berjalan');
+  fetch('/api/backup/gdrive/schedules/' + id + '/run', { method:'POST' })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { hideLoading(); if (d.success) { alert('Berhasil: ' + d.data.filename); loadSchedules(); location.reload(); } else alert('Gagal: ' + d.message); })
+  .catch(function(e) { hideLoading(); alert(e.message); });
+}
+
+function connectGDrive() {
+  fetch('/api/backup/gdrive/connect', { method: 'POST' })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { if (d.success && d.url) window.location.href = d.url; else alert(d.message); })
+  .catch(function(e) { alert(e.message); });
+}
+
+function createBackup(type) {
+  var labels = { files: 'Files', database: 'Database', email: 'Email', all: 'Full Backup' };
+  if (!confirm('Create ' + labels[type] + ' Backup?')) return;
+  showLoading('Uploading...', 'Sedang backup ke Google Drive');
+  fetch('/api/backup/gdrive/create', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({type:type}) })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { hideLoading(); if (d.success) { alert('Berhasil: ' + d.data.filename); location.reload(); } else alert('Gagal: ' + d.message); })
+  .catch(function(e) { hideLoading(); alert(e.message); });
+}
+
+function restoreBackup(id) {
+  if (!confirm('Restore Backup? Data saat ini akan ditimpa')) return;
+  showLoading('Restoring...', 'Sedang restore dari Google Drive');
+  fetch('/api/backup/gdrive/restore/' + id, { method: 'POST' })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { hideLoading(); if (d.success) { alert('Berhasil!'); location.reload(); } else alert('Gagal: ' + d.message); })
+  .catch(function(e) { hideLoading(); alert(e.message); });
+}
+
+function deleteBackup(id) {
+  if (!confirm('Hapus Backup permanen?')) return;
+  fetch('/api/backup/gdrive/' + id, { method: 'DELETE' })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { if (d.success) { alert('Dihapus'); location.reload(); } else alert(d.message); })
+  .catch(function(e) { alert(e.message); });
+}
+
+function testConnection() {
+  showLoading('Testing...', 'Cek koneksi');
+  fetch('/api/backup/gdrive/test', { method: 'POST' })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { hideLoading(); alert(d.success ? 'Koneksi OK!' : 'Gagal: ' + (d.message||d.error)); })
+  .catch(function(e) { hideLoading(); alert(e.message); });
+}
+
+function loadStorageInfo() {
+  showLoading('Loading...', 'Cek storage');
+  fetch('/api/backup/gdrive/storage')
+  .then(function(r) { return r.json(); })
+  .then(function(d) { hideLoading(); if (d.success) { var i=d.data; alert('Used: '+i.usedFormatted+'\nLimit: '+i.limitFormatted+'\nUsage: '+i.percent+'%'); } else alert(d.message); })
+  .catch(function(e) { hideLoading(); alert(e.message); });
+}
+
+function disconnect() {
+  if (!confirm('Disconnect Google Drive?')) return;
+  fetch('/api/backup/gdrive/disconnect', { method: 'POST' })
+  .then(function(r) { return r.json(); })
+  .then(function(d) { if (d.success) { alert('Disconnected'); location.reload(); } });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  fetch('/api/backup/gdrive/storage')
+  .then(function(r) { return r.json(); })
+  .then(function(d) { if (d.success) document.getElementById('storageUsed').textContent = d.data.usedFormatted; }).catch(function(){});
+  loadSchedules();
+});
+</script>

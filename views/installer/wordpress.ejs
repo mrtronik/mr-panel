@@ -1,0 +1,231 @@
+<main class="page-content">
+    <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>WordPress Installer</span></div>
+    <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+      <div>
+        <h1><i class="fa-brands fa-wordpress"></i> WordPress Installer</h1>
+        <p class="subtitle">Install or manage WordPress on your websites.</p>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="card-soft">
+          <div class="card-head"><h3><i class="fa-brands fa-wordpress"></i> Install WordPress</h3></div>
+          <div class="card-body">
+            <form id="wpInstallForm">
+              <div class="mb-3">
+                <label class="form-label-soft">Select Domain <span style="color:#ef4444">*</span></label>
+                <select class="form-soft" id="wpDomain" required>
+                  <option value="">-- Pilih Domain --</option>
+                  <% if (websites.length === 0) { %>
+                    <option value="" disabled>No websites found</option>
+                  <% } else { %>
+                    <% websites.forEach(function(site) { %>
+                      <option value="<%= site.label %>"
+                        data-installed="<%= site.wpInstalled %>"
+                        data-version="<%= site.wpVersion || '' %>"
+                        data-docroot="<%= site.document_root || '/home/public_html/' + site.label %>">
+                        <%= site.label %>
+                        <% if (site.site_type === 'subdomain') { %> <span class="badge-soft info" style="font-size:0.6rem">subdomain</span><% } %>
+                        <% if (site.wpInstalled) { %> (WP <%= site.wpVersion %>)<% } %>
+                      </option>
+                    <% }); %>
+                  <% } %>
+                </select>
+              </div>
+
+              <div id="wpStatus" class="mb-3" style="display:none">
+                <div class="card-soft" style="border-left:3px solid #f59e0b;padding:10px 14px">
+                  <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i> <span id="wpStatusText" style="font-size:0.85rem"></span>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">Site Title <span style="color:#ef4444">*</span></label>
+                  <input type="text" class="form-soft" id="wpSiteName" required placeholder="My Website">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">Admin Username <span style="color:#ef4444">*</span></label>
+                  <input type="text" class="form-soft" id="wpAdminUser" required placeholder="admin">
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">Admin Password <span style="color:#ef4444">*</span></label>
+                  <div style="display:flex;gap:0">
+                    <input type="password" class="form-soft" id="wpAdminPassword" required style="flex:1;border-radius:6px 0 0 6px">
+                    <button class="btn-ghost" type="button" onclick="generatePassword()" style="border-radius:0 6px 6px 0;border-left:none"><i class="fa-solid fa-rotate"></i></button>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">Admin Email <span style="color:#ef4444">*</span></label>
+                  <input type="email" class="form-soft" id="wpAdminEmail" required placeholder="admin@example.com">
+                </div>
+              </div>
+
+              <hr style="border-color:var(--border);margin:16px 0">
+
+              <h6 style="font-weight:600;margin-bottom:4px">Database (Optional)</h6>
+              <p style="font-size:0.78rem;color:var(--text-light);margin-bottom:12px">Kosongkan untuk auto-create</p>
+
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label-soft">DB Name</label>
+                  <input type="text" class="form-soft" id="wpDbName" placeholder="wp_domain_com">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label-soft">DB User</label>
+                  <input type="text" class="form-soft" id="wpDbUser" placeholder="Same as DB name">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label-soft">DB Password</label>
+                  <input type="text" class="form-soft" id="wpDbPassword" placeholder="Auto-generated">
+                </div>
+              </div>
+
+              <div class="card-soft" style="border-left:3px solid #10b981;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+                <i class="fa-solid fa-shield-halved" style="color:#10b981;font-size:1.1rem"></i>
+                <div>
+                  <strong style="font-size:0.85rem">MR Panel Cache</strong> auto-installed
+                  <div style="font-size:0.72rem;color:var(--text-light)">Page Cache + Browser Cache + OPcache</div>
+                </div>
+              </div>
+
+              <div style="text-align:right">
+                <button type="submit" class="btn-primary-soft" id="btnInstall"><i class="fa-solid fa-download"></i> Install WordPress</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card-soft">
+          <div class="card-head"><h3>Installed</h3></div>
+          <div class="card-body">
+            <% let hasInstalled = false; %>
+            <% websites.forEach(function(site) { %>
+              <% if (site.wpInstalled) { %>
+                <% hasInstalled = true; %>
+                <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+                  <div style="flex:1;min-width:0">
+                    <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= site.domain %></div>
+                    <div style="font-size:0.72rem;color:var(--text-light)">WP <%= site.wpVersion %></div>
+                  </div>
+                  <div style="display:flex;gap:4px;flex-shrink:0">
+                    <a href="http://<%= site.domain %>/wp-admin" target="_blank" class="act-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                    <button class="act-icon danger" onclick="deleteWp('<%= site.domain %>')"><i class="fa-solid fa-trash"></i></button>
+                  </div>
+                </div>
+              <% } %>
+            <% }); %>
+            <% if (!hasInstalled) { %>
+              <div style="text-align:center;padding:24px 0;color:var(--text-light)">
+                <i class="fa-brands fa-wordpress" style="font-size:2rem;opacity:0.3"></i>
+                <p style="margin:8px 0 0;font-size:0.82rem">Belum ada WordPress</p>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+</main>
+
+<script>
+document.getElementById('wpDomain').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const installed = opt.dataset.installed === 'true';
+    const status = document.getElementById('wpStatus');
+    const statusText = document.getElementById('wpStatusText');
+
+    if (installed) {
+        status.style.display = 'block';
+        statusText.innerHTML = 'WordPress sudah terinstall (v' + opt.dataset.version + '). Reinstall akan overwrite.';
+    } else {
+        status.style.display = 'none';
+    }
+
+    const domain = this.value;
+    if (domain) {
+        document.getElementById('wpDbName').placeholder = 'wp_' + domain.replace(/\./g, '_');
+    }
+});
+
+document.getElementById('wpInstallForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const domain = document.getElementById('wpDomain').value;
+    if (!domain) return whpToast('Error', 'Pilih domain', 'error');
+
+    const btn = document.getElementById('btnInstall');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Installing...';
+
+    try {
+        const res = await fetch('/api/installer/wordpress/install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                domain,
+                siteName: document.getElementById('wpSiteName').value,
+                adminUser: document.getElementById('wpAdminUser').value,
+                adminPassword: document.getElementById('wpAdminPassword').value,
+                adminEmail: document.getElementById('wpAdminEmail').value,
+                dbName: document.getElementById('wpDbName').value || undefined,
+                dbUser: document.getElementById('wpDbUser').value || undefined,
+                dbPassword: document.getElementById('wpDbPassword').value || undefined
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            whpToast('Error', data.error, 'error');
+        } else {
+            let msg = 'WordPress installed!\n';
+            msg += 'Admin URL: ' + domain + '/wp-admin\n';
+            msg += 'Username: ' + document.getElementById('wpAdminUser').value + '\n';
+            msg += 'Password: ' + document.getElementById('wpAdminPassword').value;
+            if (data.db) msg += '\nDB: ' + data.db.name;
+            whpToast('Berhasil!', msg, 'success');
+            setTimeout(function() { window.open('http://' + domain + '/wp-admin', '_blank'); }, 1000);
+            setTimeout(function() { location.reload(); }, 2000);
+        }
+    } catch (err) {
+        whpToast('Error', err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-download"></i> Install WordPress';
+    }
+});
+
+function generatePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+    let pass = '';
+    for (let i = 0; i < 16; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    document.getElementById('wpAdminPassword').value = pass;
+}
+
+async function deleteWp(domain) {
+    whpConfirm('Hapus WordPress?', 'Semua file WordPress di ' + domain + ' akan dihapus', async function() {
+        try {
+            const res = await fetch('/api/installer/wordpress/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain })
+            });
+            const data = await res.json();
+            if (data.error) {
+                whpToast('Error', data.error, 'error');
+            } else {
+                whpToast('Deleted!', 'WordPress dihapus.', 'success');
+                setTimeout(function() { location.reload(); }, 1500);
+            }
+        } catch (err) {
+            whpToast('Error', err.message, 'error');
+        }
+    });
+}
+</script>

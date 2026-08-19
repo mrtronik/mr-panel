@@ -1,0 +1,123 @@
+<link rel="stylesheet" href="/vendor/datatables.net-bs5/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="/vendor/datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css">
+
+<main class="page-content">
+    <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Websites</span></div>
+    <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+      <div>
+        <h1>Websites</h1>
+        <p class="subtitle">Manage all your hosted websites and domains.</p>
+      </div>
+      <a class="btn-primary-soft nav-link " href="/websites/add">
+        <i class="fa-solid fa-plus"></i> Add Website
+      </a>
+    </div>
+	    <!-- Quick stats -->
+    <div class="row g-3 mb-3" data-skeleton-target data-skeleton-type="stat" data-skeleton-count="4">
+	      <div class="col-6 col-md-3">
+	  <div class="stat-card"><span class="stat-icon blue"><i class="fa-solid fa-globe"></i></span>
+	  <div class="stat-info"><p class="stat-label">Total Sites</p><p class="stat-value"><%= totalSites %></p>
+	  </div>
+	  </div>
+	  </div>
+	        <div class="col-6 col-md-3">
+	  <div class="stat-card"><span class="stat-icon green"><i class="fa-solid fa-circle-check"></i></span>
+	  <div class="stat-info"><p class="stat-label">Active</p><p class="stat-value"><%= activeSites %></p>
+	  </div>
+	  </div>
+	  </div>
+	     <div class="col-6 col-md-3">
+	  <div class="stat-card"><span class="stat-icon amber"><i class="fa-solid fa-pause"></i></span>
+	  <div class="stat-info"><p class="stat-label">Suspended</p><p class="stat-value"><%= suspendedSites %></p>
+	  </div>
+	  </div>
+	  </div>
+
+
+      <div class="col-6 col-md-3">
+	  <div class="stat-card"><span class="stat-icon purple"><i class="fa-solid fa-chart-line"></i></span>
+	  <div class="stat-info"><p class="stat-label">Avg Uptime</p><p class="stat-value">-</p>
+	  </div>
+	  </div>
+	  </div>
+ <div class="card-soft">
+      <div class="card-head">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          <h3>All Websites</h3>
+        
+        </div>
+ 
+      </div>
+      <div class="card-body p-0">
+	  
+<table id="myTable" class="table table-striped nowrap">
+    <thead>
+        <tr>
+            <th>Domain</th>
+<th>PHP</th>
+<th>Doc Root</th>
+<th>Status</th>
+<th>Action</th>
+ 
+        </tr>
+    </thead>
+    <tbody>
+        <% websites.forEach(function(site) { %>
+            <tr>
+                <td><%= site.domain %></td>
+                <td><%= site.php_version %></td>
+                <td><%= site.document_root %></td>
+                <td><% if (site.status === 'active') { %>
+				<span class="badge-soft success">Active</span>
+				   <% } else if (site.status === 'suspended') { %>
+                          <span class="badge-soft warning">Suspend</span>
+                        <% } else { %>
+                            <span class="badge-soft info">Pending</span>
+                        <% } %></td>
+                <td><a href="/websites/<%= site.id %>" class="act-icon" title="Manage"><i class="fa-solid fa-gear"></i></a>
+				<button class="act-icon" title="Files"><i class="fa-solid fa-folder"></i></button>
+				<button type="button" class="act-icon danger" title="Delete" onclick="event.stopPropagation(); confirmDeleteWebsite(<%= site.id %>, '<%= site.domain %>')"><i class="fa-solid fa-trash"></i></button></td>
+            </tr>
+        <% }) %>
+ 	
+    </tbody>
+</table>
+</div>
+      </div>
+    </div>
+	</div>
+	</main>
+<script>
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('deleted') === '1') {
+        history.replaceState(null, '', '/websites');
+        function showToast() {
+            if (typeof whpToast === 'function') {
+                whpToast('Deleted', 'Website has been removed.', 'success');
+            } else {
+                setTimeout(showToast, 100);
+            }
+        }
+        showToast();
+    }
+})();
+
+function confirmDeleteWebsite(id, domain) {
+    whpConfirm('Delete?', 'Delete website <strong>' + domain + '</strong>? This cannot be undone.', function() {
+        var f = document.createElement('form');
+        f.method = 'POST';
+        f.action = '/websites/' + id + '/delete';
+        document.body.appendChild(f);
+        f.submit();
+    });
+}
+</script>
+<script src="/vendor/jquery/dist/jquery.min.js"></script>
+<script src="/vendor/datatables.net/js/dataTables.min.js"></script>
+<script src="/vendor/datatables.net-bs5/js/dataTables.bootstrap5.min.js"></script>
+<script src="/vendor/datatables.net-responsive/js/dataTables.responsive.min.js"></script>
+<script src="/vendor/datatables.net-responsive-bs5/js/responsive.bootstrap5.min.js"></script>
+<script>
+new DataTable('#myTable', { responsive: true });
+</script>

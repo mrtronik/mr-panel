@@ -1,0 +1,402 @@
+  <%
+    const u = (typeof user !== 'undefined' && user) ? user : {};
+    const userRole = u.role || 'user';
+  %>
+  <style>
+    .info-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-soft); }
+    .info-row:last-child { border-bottom:none; }
+    .info-lbl { font-size:0.82rem; color:var(--text-muted); }
+    .info-val { font-size:0.82rem; font-weight:600; color:var(--text-main); }
+ 
+    .apexcharts-legend text { font-weight: 600; }
+  </style>
+    
+
+  <!-- ===== Page Content ===== -->
+  <main class="page-content">
+    <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Dashboard</span></div>
+    <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+      <div>
+        <h1>Welcome back, <%= user.name %> 👋</h1>
+        <p class="subtitle">Here's an overview of your hosting account &amp; resources.</p>
+      </div>
+      <button class="btn-primary-soft" data-bs-toggle="modal" data-bs-target="#addWebsiteModal">
+        <i class="fa-solid fa-plus"></i> Add Website
+      </button>
+    </div>
+
+    <div class="dash-grid">
+      <!-- ===== LEFT: Icon Boxes grouped by category ===== -->
+      <div class="card-soft">
+        <div class="card-body">
+
+          <!-- Category: Domains -->
+          <div class="category-group">
+            <div class="category-title"><i class="fa-solid fa-globe"></i> Domains</div>
+            <div class="iconbox-grid">
+              <a class="iconbox" href="/websites">
+                <span class="icon-wrap"><i class="fa-solid fa-globe"></i></span>
+                <span class="ib-text"><span class="ib-title">Websites</span><span class="ib-sub">Manage sites</span></span>
+              </a>
+              <a class="iconbox" href="/websites/add">
+                <span class="icon-wrap"><i class="fa-solid fa-plus"></i></span>
+                <span class="ib-text"><span class="ib-title">Add Website</span><span class="ib-sub">New site</span></span>
+              </a>
+              <a class="iconbox" href="/subdomains">
+                <span class="icon-wrap"><i class="fa-solid fa-diagram-project"></i></span>
+                <span class="ib-text"><span class="ib-title">Subdomains</span><span class="ib-sub">Manage subdomains</span></span>
+              </a>
+              <a class="iconbox" href="/parked-domains">
+                <span class="icon-wrap"><i class="fa-solid fa-link"></i></span>
+                <span class="ib-text"><span class="ib-title">Parked Domains</span><span class="ib-sub">Domain aliases</span></span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Category: Security -->
+          <div class="category-group">
+            <div class="category-title"><i class="fa-solid fa-shield-halved"></i> Security</div>
+            <div class="iconbox-grid">
+              <a class="iconbox" href="/ssl">
+                <span class="icon-wrap"><i class="fa-solid fa-shield-halved"></i></span>
+                <span class="ib-text"><span class="ib-title">SSL/TLS</span><span class="ib-sub">Certificates</span></span>
+              </a>
+              <a class="iconbox" href="/server-monitor">
+                <span class="icon-wrap"><i class="fa-solid fa-chart-line"></i></span>
+                <span class="ib-text"><span class="ib-title">Server Monitor</span><span class="ib-sub">Real-time stats</span></span>
+              </a>
+              <% if (userRole === 'admin') { %>
+              <a class="iconbox" href="/settings/server">
+                <span class="icon-wrap"><i class="fa-solid fa-gear"></i></span>
+                <span class="ib-text"><span class="ib-title">Settings</span><span class="ib-sub">Server config</span></span>
+              </a>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Category: Files -->
+          <div class="category-group">
+            <div class="category-title"><i class="fa-solid fa-folder"></i> Files</div>
+            <div class="iconbox-grid">
+              <a class="iconbox" href="/file-manager">
+                <span class="icon-wrap"><i class="fa-solid fa-folder"></i></span>
+                <span class="ib-text"><span class="ib-title">File Manager</span><span class="ib-sub">Browse files</span></span>
+              </a>
+              <a class="iconbox" href="/terminal">
+                <span class="icon-wrap"><i class="fa-solid fa-terminal"></i></span>
+                <span class="ib-text"><span class="ib-title">Terminal</span><span class="ib-sub">SSH console</span></span>
+              </a>
+              <a class="iconbox" href="/cron-jobs">
+                <span class="icon-wrap"><i class="fa-solid fa-clock"></i></span>
+                <span class="ib-text"><span class="ib-title">Cron Jobs</span><span class="ib-sub">Scheduled tasks</span></span>
+              </a>
+              <a class="iconbox" href="/backups">
+                <span class="icon-wrap"><i class="fa-solid fa-cloud-arrow-down"></i></span>
+                <span class="ib-text"><span class="ib-title">Backups</span><span class="ib-sub">Backup &amp; restore</span></span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Category: Databases -->
+          <div class="category-group">
+            <div class="category-title"><i class="fa-solid fa-database"></i> Databases</div>
+            <div class="iconbox-grid">
+              <a class="iconbox" href="/db-manager">
+                <span class="icon-wrap"><i class="fa-solid fa-database"></i></span>
+                <span class="ib-text"><span class="ib-title">DB Manager</span><span class="ib-sub">Manage databases</span></span>
+              </a>
+              <a class="iconbox" href="/databases">
+                <span class="icon-wrap"><i class="fa-solid fa-server"></i></span>
+                <span class="ib-text"><span class="ib-title">MySQL DB</span><span class="ib-sub">Create database</span></span>
+              </a>
+              <a class="iconbox" href="/dns">
+                <span class="icon-wrap"><i class="fa-solid fa-earth-americas"></i></span>
+                <span class="ib-text"><span class="ib-title">DNS Manager</span><span class="ib-sub">Manage DNS</span></span>
+              </a>
+              <% if (userRole === 'admin') { %>
+              <a class="iconbox" href="/phpmyadmin">
+                <span class="icon-wrap"><i class="fa-solid fa-table"></i></span>
+                <span class="ib-text"><span class="ib-title">phpMyAdmin</span><span class="ib-sub">Web GUI</span></span>
+              </a>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Category: Email -->
+          <div class="category-group">
+            <div class="category-title"><i class="fa-solid fa-envelope"></i> Email</div>
+            <div class="iconbox-grid">
+              <a class="iconbox" href="/email-accounts">
+                <span class="icon-wrap"><i class="fa-solid fa-envelope"></i></span>
+                <span class="ib-text"><span class="ib-title">Email Accounts</span><span class="ib-sub">Create inbox</span></span>
+              </a>
+              <a class="iconbox" href="/webmail">
+                <span class="icon-wrap"><i class="fa-solid fa-inbox"></i></span>
+                <span class="ib-text"><span class="ib-title">Webmail</span><span class="ib-sub">Read &amp; write</span></span>
+              </a>
+              <a class="iconbox" href="/email-forwarders">
+                <span class="icon-wrap"><i class="fa-solid fa-share"></i></span>
+                <span class="ib-text"><span class="ib-title">Forwarders</span><span class="ib-sub">Email forwarding</span></span>
+              </a>
+              <% if (userRole === 'admin') { %>
+              <a class="iconbox" href="/settings/mail">
+                <span class="icon-wrap"><i class="fa-solid fa-gear"></i></span>
+                <span class="ib-text"><span class="ib-title">Mail Settings</span><span class="ib-sub">Config</span></span>
+              </a>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Category: Software -->
+          <div class="category-group">
+            <div class="category-title"><i class="fa-solid fa-cube"></i> Software</div>
+            <div class="iconbox-grid">
+              <% if (userRole === 'admin') { %>
+              <a class="iconbox" href="/php-settings">
+                <span class="icon-wrap"><i class="fa-brands fa-php"></i></span>
+                <span class="ib-text"><span class="ib-title">PHP Settings</span><span class="ib-sub">Version &amp; config</span></span>
+              </a>
+              <% } %>
+              <a class="iconbox" href="/installer/wordpress">
+                <span class="icon-wrap"><i class="fa-brands fa-wordpress"></i></span>
+                <span class="ib-text"><span class="ib-title">WordPress</span><span class="ib-sub">1-click install</span></span>
+              </a>
+		<a class="iconbox" href="/installer/laravel">
+                <span class="icon-wrap"><i class="ti ti-brand-laravel"></i></span>
+                <span class="ib-text"><span class="ib-title">Laravel</span><span class="ib-sub">1-click install</span></span>
+              </a>
+<a class="iconbox" href="/installer/python">
+                <span class="icon-wrap"><i class="fa-brands fa-python"></i></span>
+                <span class="ib-text"><span class="ib-title">Python</span><span class="ib-sub">1-click install</span></span>
+              </a>
+
+              <a class="iconbox" href="/wordpress-toolkit">
+                <span class="icon-wrap"><i class="fa-solid fa-wrench"></i></span>
+                <span class="ib-text"><span class="ib-title">WP Toolkit</span><span class="ib-sub">Manage WordPress</span></span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== RIGHT ===== -->
+      <div>
+        <% if (userRole === 'admin') { %>
+        <!-- Admin: Server Information -->
+        <div class="card-soft mb-3">
+          <div class="card-head">
+            <h3>Server Information</h3>
+          </div>
+          <div class="card-body">
+            <% const si = dashboard.serverInfo || {}; %>
+            <div class="info-row"><span class="info-lbl">Server Name</span><span class="info-val"><%= si.hostname || '--' %></span></div>
+            <div class="info-row"><span class="info-lbl">Operating System</span><span class="info-val"><%= si.platform || '--' %></span></div>
+            <div class="info-row"><span class="info-lbl">Web Server</span><span class="info-val"><%= si.webServer || '--' %></span></div>
+            <div class="info-row"><span class="info-lbl">MySQL</span><span class="info-val"><%= si.mysql || '--' %></span></div>
+            <div class="info-row"><span class="info-lbl">PHP</span><span class="info-val"><%= si.php || '--' %></span></div>
+          </div>
+        </div>
+
+        <!-- Admin: Current Usage -->
+        <div class="card-soft mb-3">
+          <div class="card-head">
+            <h3>Current Usage</h3>
+          </div>
+          <div class="card-body">
+            <div class="stat-list">
+              <div class="stat-card">
+                <span class="stat-icon blue"><i class="fa-solid fa-users"></i></span>
+                <div class="stat-info"><p class="stat-label">Total Users</p><p class="stat-value"><%= dashboard.stats.totalUsers || 0 %></p></div>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon info"><i class="fa-solid fa-user-tie"></i></span>
+                <div class="stat-info"><p class="stat-label">Total Resellers</p><p class="stat-value"><%= dashboard.stats.totalResellers || 0 %></p></div>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon green"><i class="fa-solid fa-globe"></i></span>
+                <div class="stat-info"><p class="stat-label">Total Websites</p><p class="stat-value"><%= dashboard.stats.totalWebsites || 0 %></p></div>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon amber"><i class="fa-solid fa-envelope"></i></span>
+                <div class="stat-info"><p class="stat-label">Total Email</p><p class="stat-value"><%= dashboard.stats.totalEmails || 0 %></p></div>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon purple"><i class="fa-solid fa-database"></i></span>
+                <div class="stat-info"><p class="stat-label">Total Database</p><p class="stat-value"><%= dashboard.stats.totalDatabases || 0 %></p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin: Disk & Bandwidth -->
+        <div class="card-soft mb-3">
+          <div class="card-head"><h3>Server Resources</h3></div>
+          <div class="card-body">
+            <% if (dashboard.stats.disk) { %>
+            <div class="res-bar-item">
+              <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-hard-drive"></i> Disk</span><span class="val"><%= dashboard.stats.disk.percent %>% (<%= dashboard.stats.disk.used %> / <%= dashboard.stats.disk.total %>)</span></div>
+              <div class="res-bar"><div class="fill <%= dashboard.stats.disk.percent > 80 ? 'red' : dashboard.stats.disk.percent > 60 ? 'amber' : 'green' %>" style="width:<%= dashboard.stats.disk.percent %>%"></div></div>
+            </div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Admin/Reseller: Per-Website Disk Usage -->
+        <div class="card-soft mb-3">
+          <div class="card-head"><h3><i class="fa-solid fa-hard-drive"></i> Website Disk Usage</h3></div>
+          <div class="card-body" id="diskUsageBody">
+            <div style="text-align:center;padding:15px;color:var(--text-light)"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
+          </div>
+        </div>
+
+        <% } else if (userRole === 'reseller') { %>
+        <!-- Reseller: Info -->
+        <div class="card-soft mb-3">
+          <div class="card-head"><h3>Reseller Information</h3></div>
+          <div class="card-body">
+            <div class="info-row"><span class="info-lbl">Package</span><span class="info-val"><%= dashboard.stats.package || 'Unlimited' %></span></div>
+            <div class="info-row"><span class="info-lbl">Status</span><span class="info-val"><span class="badge-soft <%= dashboard.stats.status === 'active' ? 'success' : 'warning' %>"><%= dashboard.stats.status %></span></span></div>
+          </div>
+        </div>
+
+        <!-- Reseller: Your Usage -->
+        <div class="card-soft mb-3">
+          <div class="card-head"><h3>Your Usage</h3></div>
+          <div class="card-body">
+            <div class="stat-list">
+              <div class="stat-card">
+                <span class="stat-icon blue"><i class="fa-solid fa-users"></i></span>
+                <div class="stat-info"><p class="stat-label">Users Under You</p><p class="stat-value"><%= dashboard.stats.totalUsers || 0 %></p></div>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon green"><i class="fa-solid fa-globe"></i></span>
+                <div class="stat-info"><p class="stat-label">Websites</p><p class="stat-value"><%= dashboard.stats.totalWebsites || 0 %></p></div>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon amber"><i class="fa-solid fa-envelope"></i></span>
+                <div class="stat-info"><p class="stat-label">Email Accounts</p><p class="stat-value"><%= dashboard.stats.totalEmails || 0 %></p></div>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon purple"><i class="fa-solid fa-database"></i></span>
+                <div class="stat-info"><p class="stat-label">Databases</p><p class="stat-value"><%= dashboard.stats.totalDatabases || 0 %></p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reseller: Quota Usage -->
+        <% if (dashboard.stats.quota) { %>
+        <div class="card-soft mb-3">
+          <div class="card-head"><h3>Quota Usage</h3></div>
+          <div class="card-body">
+            <% const q = dashboard.stats.quota; %>
+            <div class="res-bar-item">
+              <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-hard-drive"></i> Disk</span><span class="val"><%= q.diskLimit ? Math.round(q.diskLimit / 1073741824) : 0 %> GB</span></div>
+              <div class="res-bar"><div class="fill green" style="width:0%"></div></div>
+            </div>
+            <div class="res-bar-item" style="margin-top:10px">
+              <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-globe"></i> Domains</span><span class="val"><%= dashboard.stats.totalWebsites || 0 %> / <%= q.maxDomains %></span></div>
+              <div class="res-bar"><div class="fill <%= q.maxDomains && (dashboard.stats.totalWebsites / q.maxDomains * 100) > 90 ? 'red' : 'green' %>" style="width:<%= q.maxDomains ? Math.min(100, (dashboard.stats.totalWebsites / q.maxDomains) * 100) : 0 %>%"></div></div>
+            </div>
+            <div class="res-bar-item" style="margin-top:10px">
+              <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-envelope"></i> Email</span><span class="val"><%= dashboard.stats.totalEmails || 0 %> / <%= q.maxEmail %></span></div>
+              <div class="res-bar"><div class="fill <%= q.maxEmail && (dashboard.stats.totalEmails / q.maxEmail * 100) > 90 ? 'red' : 'green' %>" style="width:<%= q.maxEmail ? Math.min(100, (dashboard.stats.totalEmails / q.maxEmail) * 100) : 0 %>%"></div></div>
+            </div>
+          </div>
+        </div>
+        <% } %>
+
+        <% } else { %>
+        <!-- User: Account Information -->
+        <div class="card-soft mb-3">
+          <div class="card-head"><h3>Account Information</h3></div>
+          <div class="card-body">
+            <div class="info-row"><span class="info-lbl">Username</span><span class="info-val"><%= dashboard.stats.username || '--' %></span></div>
+            <div class="info-row"><span class="info-lbl">Package</span><span class="info-val"><%= dashboard.stats.packageName || 'Unlimited' %></span></div>
+            <div class="info-row"><span class="info-lbl">Domain</span><span class="info-val"><%= dashboard.stats.domain || '--' %></span></div>
+            <div class="info-row"><span class="info-lbl">Status</span><span class="info-val"><span class="badge-soft <%= dashboard.stats.status === 'active' ? 'success' : 'warning' %>"><%= dashboard.stats.status %></span></span></div>
+          </div>
+        </div>
+
+        <!-- User: Your Usage -->
+        <div class="card-soft mb-3">
+          <div class="card-head"><h3>Your Usage</h3></div>
+          <div class="card-body">
+            <div class="stat-list">
+              <div class="stat-card">
+                <span class="stat-icon green"><i class="fa-solid fa-globe"></i></span>
+                <div class="stat-info"><p class="stat-label">Websites</p><p class="stat-value"><%= dashboard.stats.totalWebsites || 0 %></p></div>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon amber"><i class="fa-solid fa-envelope"></i></span>
+                <div class="stat-info"><p class="stat-label">Email Accounts</p><p class="stat-value"><%= dashboard.stats.totalEmails || 0 %></p></div>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon purple"><i class="fa-solid fa-database"></i></span>
+                <div class="stat-info"><p class="stat-label">Databases</p><p class="stat-value"><%= dashboard.stats.totalDatabases || 0 %></p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User: Quota Usage -->
+        <% if (dashboard.stats.quota) { %>
+        <div class="card-soft mb-3">
+          <div class="card-head"><h3>Quota Usage</h3></div>
+          <div class="card-body">
+            <% const q = dashboard.stats.quota; %>
+            <div class="res-bar-item">
+              <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-hard-drive"></i> Disk</span><span class="val"><%= q.diskLimit ? Math.round(q.diskLimit / 1073741824) : 0 %> GB</span></div>
+              <div class="res-bar"><div class="fill green" style="width:0%"></div></div>
+            </div>
+            <div class="res-bar-item" style="margin-top:10px">
+              <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-globe"></i> Domains</span><span class="val"><%= dashboard.stats.totalWebsites || 0 %> / <%= q.maxDomains %></span></div>
+              <div class="res-bar"><div class="fill <%= q.maxDomains && (dashboard.stats.totalWebsites / q.maxDomains * 100) > 90 ? 'red' : 'green' %>" style="width:<%= q.maxDomains ? Math.min(100, (dashboard.stats.totalWebsites / q.maxDomains) * 100) : 0 %>%"></div></div>
+            </div>
+            <div class="res-bar-item" style="margin-top:10px">
+              <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-envelope"></i> Email</span><span class="val"><%= dashboard.stats.totalEmails || 0 %> / <%= q.maxEmail %></span></div>
+              <div class="res-bar"><div class="fill <%= q.maxEmail && (dashboard.stats.totalEmails / q.maxEmail * 100) > 90 ? 'red' : 'green' %>" style="width:<%= q.maxEmail ? Math.min(100, (dashboard.stats.totalEmails / q.maxEmail) * 100) : 0 %>%"></div></div>
+            </div>
+          </div>
+        </div>
+        <% } %>
+        <% } %>
+      </div>
+    </div>
+  </main>
+
+  <script>
+  var userRole = '<%= userRole %>';
+
+  // Load per-website disk usage
+  function loadDiskUsage() {
+    fetch('/api/usage', {credentials:'include'})
+    .then(function(r){return r.json()}).then(function(d){
+      if (!d.success || !d.websites || d.websites.length === 0) {
+        document.getElementById('diskUsageBody').innerHTML = '<div style="text-align:center;padding:15px;color:var(--text-light);font-size:0.85rem">No websites</div>';
+        return;
+      }
+      var html = '';
+      var maxDisk = Math.max.apply(null, d.websites.map(function(w){return w.disk_bytes}));
+      d.websites.forEach(function(w) {
+        var pct = maxDisk > 0 ? Math.max(2, (w.disk_bytes / maxDisk) * 100) : 2;
+        var color = w.disk_bytes > 1073741824 ? 'red' : w.disk_bytes > 536870912 ? 'amber' : 'green';
+        html += '<div class="res-bar-item" style="margin-bottom:10px">';
+        html += '<div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-globe"></i> ' + w.domain + '</span><span class="val">' + w.formatted + '</span></div>';
+        html += '<div class="res-bar"><div class="fill ' + color + '" style="width:' + pct + '%"></div></div>';
+        html += '</div>';
+      });
+      html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;font-size:0.82rem">';
+      html += '<span style="color:var(--text-light)">Total: <strong>' + d.formatted.total_disk + '</strong></span>';
+      html += '<span style="color:var(--text-light)">' + d.website_count + ' websites</span>';
+      html += '</div>';
+      document.getElementById('diskUsageBody').innerHTML = html;
+    }).catch(function(){
+      document.getElementById('diskUsageBody').innerHTML = '<div style="text-align:center;padding:15px;color:var(--text-light)">Failed to load</div>';
+    });
+  }
+  loadDiskUsage();
+  </script>
+
+ 

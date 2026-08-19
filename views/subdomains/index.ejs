@@ -1,0 +1,154 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper" style="flex-direction:column">
+    <div class="pma-nav">
+      <span class="pma-nav-title"><i class="fa-solid fa-diagram-project"></i> Subdomains</span>
+    </div>
+
+    <div class="pma-content">
+      <div class="pma-box">
+        <div class="pma-box-header">
+          <h3><i class="fa-solid fa-list"></i> Websites</h3>
+        </div>
+        <table class="pma-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Domain</th>
+              <th style="width:120px">Subdomains</th>
+              <th style="width:180px">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (websites.length === 0) { %>
+            <tr><td colspan="4" class="text-center text-muted p-4">No websites found</td></tr>
+            <% } else { %>
+            <% websites.forEach(function(site, i) { %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><a href="/websites/<%= site.id %>" class="pma-db-link"><i class="fa-solid fa-globe"></i> <%= site.domain %></a></td>
+              <td>-</td>
+              <td class="pma-actions">
+                <button class="btn btn-xs btn-primary" onclick="showAddModal(<%= site.id %>, '<%= site.domain %>')"><i class="fa-solid fa-plus"></i> Add</button>
+                <button class="btn btn-xs btn-outline" onclick="loadSubdomains(<%= site.id %>, '<%= site.domain %>')"><i class="fa-solid fa-eye"></i> View</button>
+              </td>
+            </tr>
+            <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pma-box" id="subdomainsBox" style="display:none">
+        <div class="pma-box-header">
+          <h3><i class="fa-solid fa-diagram-project"></i> Subdomains — <span id="subDomainName"></span></h3>
+        </div>
+        <table class="pma-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Subdomain</th>
+              <th>Target Folder</th>
+              <th style="width:80px">Status</th>
+              <th style="width:80px">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="subdomainsList"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-plus"></i> Add Subdomain — <span id="addModalDomain"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="addWebsiteId">
+        <div class="mb-3">
+          <label class="form-label">Subdomain</label>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="text" class="form-control" id="addSubdomain" placeholder="blog">
+            <span style="font-size:0.82rem;color:var(--text-light)">.</span>
+            <input type="text" class="form-control" id="addBaseDomain" readonly style="max-width:200px;background:var(--table-header-bg)">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Target Folder</label>
+          <input type="text" class="form-control" id="addTargetFolder" placeholder="blog">
+          <div style="font-size:0.7rem;color:var(--text-light);margin-top:4px">Folder inside public_html</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="createSubdomain()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showAddModal(websiteId, domain) {
+    document.getElementById('addWebsiteId').value = websiteId;
+    document.getElementById('addBaseDomain').value = domain;
+    document.getElementById('addModalDomain').textContent = domain;
+    document.getElementById('addSubdomain').value = '';
+    document.getElementById('addTargetFolder').value = '';
+    new bootstrap.Modal(document.getElementById('addModal')).show();
+}
+
+function createSubdomain() {
+    var websiteId = document.getElementById('addWebsiteId').value;
+    var subdomain = document.getElementById('addSubdomain').value.trim();
+    var baseDomain = document.getElementById('addBaseDomain').value;
+    var folder = document.getElementById('addTargetFolder').value.trim();
+    if (!subdomain || !folder) return whpToast('Warning', 'All fields required', 'warning');
+
+    var fullDomain = subdomain + '.' + baseDomain;
+    fetch('/subdomains', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+        body: JSON.stringify({ website_id: websiteId, subdomain: fullDomain, target_folder: folder })
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Created','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+
+function loadSubdomains(websiteId, domain) {
+    document.getElementById('subDomainName').textContent = domain;
+    document.getElementById('subdomainsBox').style.display = 'block';
+    document.getElementById('subdomainsList').innerHTML = '<tr><td colspan="5" class="text-center p-3"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>';
+
+    fetch('/subdomains/list/' + websiteId, { credentials: 'include' })
+    .then(function(r){return r.json()}).then(function(d){
+        if (!d.success || d.subdomains.length === 0) {
+            document.getElementById('subdomainsList').innerHTML = '<tr><td colspan="5" class="text-center text-muted p-3">No subdomains</td></tr>';
+            return;
+        }
+        var html = '';
+        d.subdomains.forEach(function(s, i) {
+            html += '<tr>';
+            html += '<td>' + (i+1) + '</td>';
+            html += '<td><a href="http://' + s.subdomain + '" target="_blank" class="pma-db-link"><i class="fa-solid fa-link"></i> ' + s.subdomain + '</a></td>';
+            html += '<td class="pma-cell">' + s.target_folder + '</td>';
+            html += '<td><span class="badge bg-success">Active</span></td>';
+            html += '<td class="pma-actions"><button class="btn btn-xs btn-outline btn-danger" onclick="deleteSubdomain(' + s.id + ')"><i class="fa-solid fa-trash"></i></button></td>';
+            html += '</tr>';
+        });
+        document.getElementById('subdomainsList').innerHTML = html;
+    });
+}
+
+function deleteSubdomain(id) {
+    whpConfirm('Delete?', 'Remove this subdomain?', function() {
+        fetch('/subdomains/' + id, { method: 'DELETE', credentials: 'include' })
+        .then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Deleted','','success');setTimeout(function(){location.reload()},500)}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+</script>

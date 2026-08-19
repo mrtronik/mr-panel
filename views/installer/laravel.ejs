@@ -1,0 +1,215 @@
+<main class="page-content">
+    <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Laravel Installer</span></div>
+    <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+      <div>
+        <h1><i class="fa-solid fa-code"></i> Laravel Installer</h1>
+        <p class="subtitle">Install or manage Laravel on your websites.</p>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="card-soft">
+          <div class="card-head"><h3><i class="fa-solid fa-code"></i> Install Laravel</h3></div>
+          <div class="card-body">
+            <form id="laravelInstallForm">
+              <div class="mb-3">
+                <label class="form-label-soft">Select Domain <span style="color:#ef4444">*</span></label>
+                <select class="form-soft" id="lvDomain" required>
+                  <option value="">-- Pilih Domain --</option>
+                  <% if (websites.length === 0) { %>
+                    <option value="" disabled>No websites found</option>
+                  <% } else { %>
+                    <% websites.forEach(function(site) { %>
+                      <option value="<%= site.label %>"
+                        data-installed="<%= site.laravelInstalled %>"
+                        data-version="<%= site.laravelVersion || '' %>">
+                        <%= site.label %>
+                        <% if (site.site_type === 'subdomain') { %> <span class="badge-soft info" style="font-size:0.6rem">subdomain</span><% } %>
+                        <% if (site.laravelInstalled) { %> <span class="badge-soft success" style="font-size:0.6rem">Laravel</span><% } %>
+                      </option>
+                    <% }); %>
+                  <% } %>
+                </select>
+              </div>
+
+              <div id="lvStatus" class="mb-3" style="display:none">
+                <div class="card-soft" style="border-left:3px solid #f59e0b;padding:10px 14px">
+                  <i class="fa-solid fa-triangle-exclamation" style="color:#f59e0b"></i>
+                  <span id="lvStatusText" style="font-size:0.85rem"></span>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">App Name</label>
+                  <input type="text" class="form-soft" id="lvAppName" placeholder="My Laravel App" value="Laravel">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label-soft">Git Repository (Optional)</label>
+                  <input type="text" class="form-soft" id="lvRepoUrl" placeholder="https://github.com/user/repo.git">
+                  <div style="font-size:0.72rem;color:var(--text-light);margin-top:4px">Default: official Laravel repo</div>
+                </div>
+              </div>
+
+              <hr style="border-color:var(--border);margin:16px 0">
+
+              <h6 style="font-weight:600;margin-bottom:12px">Database Configuration</h6>
+
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label-soft">Database Name</label>
+                  <input type="text" class="form-soft" id="lvDbName" placeholder="Auto: laravel_domain_com">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label-soft">Database User</label>
+                  <input type="text" class="form-soft" id="lvDbUser" placeholder="Same as DB name">
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label class="form-label-soft">Database Password</label>
+                  <input type="text" class="form-soft" id="lvDbPassword" placeholder="Auto-generated">
+                </div>
+              </div>
+
+              <div style="text-align:right">
+                <button type="submit" class="btn-primary-soft" id="btnInstallLv"><i class="fa-solid fa-download"></i> Install Laravel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card-soft">
+          <div class="card-head"><h3>Installed Laravel</h3></div>
+          <div class="card-body" id="installedListLv">
+            <% let hasInstalled = false; %>
+            <% websites.forEach(function(site) { %>
+              <% if (site.laravelInstalled) { %>
+                <% hasInstalled = true; %>
+                <div style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+                  <div style="flex:1;min-width:0">
+                    <div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><%= site.label %></div>
+                    <div style="font-size:0.72rem;color:var(--text-light)"><%= site.laravelVersion %></div>
+                  </div>
+                  <div style="display:flex;gap:4px;flex-shrink:0">
+                    <a href="http://<%= site.label %>" target="_blank" class="act-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                    <button class="act-icon" onclick="clearCacheLv('<%= site.label %>')" title="Clear Cache"><i class="fa-solid fa-rotate"></i></button>
+                    <button class="act-icon danger" onclick="deleteLv('<%= site.label %>')"><i class="fa-solid fa-trash"></i></button>
+                  </div>
+                </div>
+              <% } %>
+            <% }); %>
+            <% if (!hasInstalled) { %>
+              <div style="text-align:center;padding:24px 0;color:var(--text-light)">
+                <i class="fa-solid fa-code" style="font-size:2rem;opacity:0.3"></i>
+                <p style="margin:8px 0 0;font-size:0.82rem">No Laravel installed yet</p>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+</main>
+
+<script>
+document.getElementById('lvDomain').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const installed = opt.dataset.installed === 'true';
+    const status = document.getElementById('lvStatus');
+    const statusText = document.getElementById('lvStatusText');
+
+    if (installed) {
+        status.style.display = 'block';
+        statusText.innerHTML = 'Laravel is already installed (' + opt.dataset.version + '). Reinstalling will overwrite files.';
+    } else {
+        status.style.display = 'none';
+    }
+
+    const domain = this.value;
+    if (domain) {
+        document.getElementById('lvDbName').placeholder = 'laravel_' + domain.replace(/\./g, '_');
+    }
+});
+
+document.getElementById('laravelInstallForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const domain = document.getElementById('lvDomain').value;
+    if (!domain) return whpToast('Error', 'Please select a domain', 'error');
+
+    const btn = document.getElementById('btnInstallLv');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Installing... (may take a while)';
+
+    try {
+        const res = await fetch('/api/installer/laravel/install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                domain,
+                appName: document.getElementById('lvAppName').value,
+                dbName: document.getElementById('lvDbName').value || undefined,
+                dbUser: document.getElementById('lvDbUser').value || undefined,
+                dbPassword: document.getElementById('lvDbPassword').value || undefined,
+                repoUrl: document.getElementById('lvRepoUrl').value || undefined
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            whpToast('Error', data.error, 'error');
+        } else {
+            let msg = 'Laravel installed successfully!';
+            if (data.db) {
+                msg += '\nDatabase: ' + data.db.name;
+                msg += '\nDB User: ' + data.db.user;
+                msg += '\nDB Password: ' + data.db.password;
+            }
+            whpToast('Success!', msg, 'success');
+            setTimeout(function() { location.reload(); }, 2000);
+        }
+    } catch (err) {
+        whpToast('Error', err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-download"></i> Install Laravel';
+    }
+});
+
+async function deleteLv(domain) {
+    whpConfirm('Delete Laravel?', 'This will delete all Laravel files from ' + domain, async function() {
+        try {
+            const res = await fetch('/api/installer/laravel/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ domain })
+            });
+            const data = await res.json();
+            if (data.error) whpToast('Error', data.error, 'error');
+            else {
+                whpToast('Deleted!', 'Laravel has been removed.', 'success');
+                setTimeout(function() { location.reload(); }, 1500);
+            }
+        } catch (err) {
+            whpToast('Error', err.message, 'error');
+        }
+    });
+}
+
+async function clearCacheLv(domain) {
+    try {
+        const res = await fetch('/api/installer/laravel/clear-cache', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain })
+        });
+        const data = await res.json();
+        if (data.error) whpToast('Error', data.error, 'error');
+        else whpToast('Success', 'Cache cleared!', 'success');
+    } catch (err) {
+        whpToast('Error', err.message, 'error');
+    }
+}
+</script>

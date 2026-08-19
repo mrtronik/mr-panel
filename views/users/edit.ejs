@@ -1,0 +1,88 @@
+<div class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box justify-content-between d-flex align-items-lg-center flex-lg-row flex-column">
+                    <h4 class="page-title"><i class="ri-edit-line me-2"></i>Edit User</h4>
+                    <a href="/users" class="btn btn-light btn-sm"><i class="ri-arrow-left-line me-1"></i>Back</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        <% if (error) { %>
+                        <div class="alert alert-danger"><%= error %></div>
+                        <% } %>
+
+                        <form method="POST" action="/users/<%= user.id %>/edit">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Full Name *</label>
+                                    <input type="text" class="form-control" name="name" value="<%= user.name %>" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Username *</label>
+                                    <input type="text" class="form-control" name="username" value="<%= user.username %>" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email *</label>
+                                    <input type="email" class="form-control" name="email" value="<%= user.email %>" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Password <small class="text-muted">(leave blank to keep current)</small></label>
+                                    <input type="password" class="form-control" name="password" minlength="6">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Role *</label>
+                                    <select class="form-select" name="role" required>
+                                        <option value="user" <%= user.role === 'user' ? 'selected' : '' %>>User</option>
+                                        <option value="reseller" <%= user.role === 'reseller' ? 'selected' : '' %>>Reseller</option>
+                                        <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Package</label>
+                                    <select class="form-select" name="package_id">
+                                        <option value="">No Package</option>
+                                        <% packages.forEach(function(p) { %>
+                                        <option value="<%= p.id %>" <%= user.package_id == p.id ? 'selected' : '' %>><%= p.name %></option>
+                                        <% }); %>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" name="status">
+                                        <option value="active" <%= user.status === 'active' ? 'selected' : '' %>>Active</option>
+                                        <option value="suspended" <%= user.status === 'suspended' ? 'selected' : '' %>>Suspended</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Home Directory</label>
+                                <input type="text" class="form-control" value="<%= user.home_dir %>" disabled>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Created</label>
+                                <input type="text" class="form-control" value="<%= user.created_at %>" disabled>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary"><i class="ri-check-line me-1"></i>Update User</button>
+                            <a href="/users" class="btn btn-light ms-2">Cancel</a>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

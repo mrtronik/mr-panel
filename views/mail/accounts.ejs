@@ -1,0 +1,510 @@
+<link rel="stylesheet" href="/vendor/datatables.net-bs5/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="/vendor/datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css">
+<style>
+table.dataTable td.dtr-control {
+  cursor: pointer !important;
+  position: relative !important;
+  padding-left: 30px !important;
+}
+table.dataTable td.dtr-control::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  border-left: 6px solid var(--primary) !important;
+}
+table.dataTable td.dtr-control.expanded::before {
+  transform: translateY(-50%) rotate(90deg) !important;
+}
+
+[data-theme="dark"] .dataTables_wrapper .dataTables_length,
+[data-theme="dark"] .dataTables_wrapper .dataTables_length label,
+[data-theme="dark"] .dataTables_wrapper .dataTables_filter,
+[data-theme="dark"] .dataTables_wrapper .dataTables_filter label,
+[data-theme="dark"] .dataTables_wrapper .dataTables_info,
+[data-theme="dark"] .dt-container .dt-length,
+[data-theme="dark"] .dt-container .dt-length label,
+[data-theme="dark"] .dt-container .dt-search,
+[data-theme="dark"] .dt-container .dt-search label,
+[data-theme="dark"] .dt-container .dt-info {
+  color: var(--text-muted) !important;
+}
+[data-theme="dark"] .dt-container .dt-length select,
+[data-theme="dark"] .dataTables_wrapper .dataTables_length select {
+  background: var(--bg-input) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color) !important;
+}
+[data-theme="dark"] .dt-container .dt-search input,
+[data-theme="dark"] .dataTables_wrapper .dataTables_filter input {
+  background: var(--bg-input) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color) !important;
+}
+[data-theme="dark"] .dt-container .dt-paging .dt-paging-button,
+[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button {
+  color: var(--text-muted) !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+}
+[data-theme="dark"] .dt-container .dt-paging .dt-paging-button:hover,
+[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text-main) !important;
+  border-color: var(--primary) !important;
+}
+[data-theme="dark"] .dt-container .dt-paging .dt-paging-button.current,
+[data-theme="dark"] .dt-container .dt-paging .dt-paging-button.current:hover,
+[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border-color: var(--primary) !important;
+}
+[data-theme="dark"] .dt-container .dt-paging .dt-paging-button.disabled,
+[data-theme="dark"] .dt-container .dt-paging .dt-paging-button.disabled:hover,
+[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+[data-theme="dark"] .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+  background: var(--bg-card) !important;
+  color: var(--text-light) !important;
+  border-color: var(--border-color) !important;
+  opacity: 0.4;
+}
+</style>
+ <main class="page-content">
+        <div class="breadcrumb-bar">
+          <a href="index.html">Home</a>
+          <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+          <span>Email</span>
+        </div>
+        <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+          <div>
+            <h1>Email Accounts</h1>
+            <p class="subtitle">Manage mailboxes, forwarders &amp; spam filters.</p>
+          </div>
+          <button class="btn-primary-soft" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+            <i class="fa-solid fa-plus"></i> Add Email </button>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6 col-md-3">
+            <div class="stat-card">
+              <span class="stat-icon amber">
+                <i class="fa-solid fa-envelope"></i>
+              </span>
+              <div class="stat-info">
+                <p class="stat-label">Accounts</p>
+                <p class="stat-value"><%= stats.accountCount %></p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="stat-card">
+              <span class="stat-icon green">
+                <i class="fa-solid fa-paper-plane"></i>
+              </span>
+              <div class="stat-info">
+                <p class="stat-label">Forwarders</p>
+                <p class="stat-value"><%= stats.forwarderCount %></p>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="stat-card">
+              <span class="stat-icon blue">
+                <i class="fa-solid fa-hard-drive"></i>
+              </span>
+              <div class="stat-info">
+                <p class="stat-label">Used Storage</p>
+                <p class="stat-value"><%= stats.usedStorage %></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-soft">
+          <div class="card-head">
+            <h3>Mailboxes</h3>
+          </div>
+          <div class="card-body p-0">
+    
+			              <table id="akunemail" class="table-soft table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Quota / Usage</th>
+                        <th>Created</th>
+                        <th style="width: 220px">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (accounts && accounts.length > 0) { %>
+                        <% accounts.forEach(function(acc) { %>
+                            <tr>
+                                <td><strong><%= acc.email %></strong></td>
+                                <td>
+                                    <% if (acc.status === 'active') { %>
+                                        <span class="badge bg-success">Active</span>
+                                    <% } else if (acc.status === 'suspended') { %>
+                                        <span class="badge bg-warning">Suspended</span>
+                                    <% } else { %>
+                                        <span class="badge bg-danger">Deleted</span>
+                                    <% } %>
+                                </td>
+                                <td style="min-width:200px">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small><%= acc.usedFormatted %> / <%= acc.quotaFormatted %></small>
+                                        <% if (acc.quota > 0) { %>
+                                            <small class="<%= parseFloat(acc.quotaPercent) > 90 ? 'text-danger fw-bold' : 'text-muted' %>"><%= acc.quotaPercent %>%</small>
+                                        <% } %>
+                                    </div>
+                                    <% if (acc.quota > 0) { %>
+                                        <div class="progress" style="height:6px">
+                                            <div class="progress-bar bg-<%= parseFloat(acc.quotaPercent) > 90 ? 'danger' : parseFloat(acc.quotaPercent) > 70 ? 'warning' : 'success' %>" style="width:<%= acc.quotaPercent %>%"></div>
+                                        </div>
+                                    <% } %>
+                                </td>
+                                <td><small class="text-muted"><%= acc.created_at ? new Date(acc.created_at).toLocaleDateString('id-ID') : '-' %></small></td>
+                                <td>
+                                    <button class="act-icon" title="Open Webmail" onclick="openWebmail('<%= acc.email %>')">
+                                        <i class="ti ti-mail-opened"></i>
+                                    </button>
+                                    <button class="act-icon" title="Edit Quota" onclick="showQuotaModal('<%= acc.email %>', <%= acc.quota || 0 %>)">
+                                       <i class="ti ti-mail-cog"></i>
+                                    </button>
+                                    <button class="act-icon" title="Change Password" onclick="showPasswordModal('<%= acc.email %>')">
+                                       <i class="ti ti-key"></i>
+                                    </button>
+                                    <button class="act-icon" title="Toggle Status" onclick="toggleAccount('<%= acc.email %>')">
+                                      <i class="ti ti-mail-question"></i>
+                                    </button>
+                                    <button class="act-icon" title="Delete" onclick="deleteAccount('<%= acc.email %>')">
+                                        <i class="ti ti-mail-x"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } %>
+                </tbody>
+            </table>
+          </div>
+        </div>
+ 
+      </main>
+  
+    <script src="/vendor/jquery/dist/jquery.min.js"></script>
+<script src="/vendor/datatables.net/js/dataTables.min.js"></script>
+<script src="/vendor/datatables.net-bs5/js/dataTables.bootstrap5.min.js"></script>
+ <script>
+new DataTable('#akunemail', {
+    order: [[0, 'asc']],
+    pageLength: 25
+});
+ </script>  
+ 
+<div class="modal fade" id="createAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ri-mail-add-line"></i> Create Email Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createForm">
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="createUsername" placeholder="e.g. info" required>
+                            <span class="input-group-text">@</span>
+                            <select class="form-select" id="createDomain" required>
+                                <% domains.forEach(function(d) { %>
+                                    <option value="<%= d %>"><%= d %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" id="createPassword" required minlength="6">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="createPasswordConfirm" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quota (Mailbox Size Limit)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="createQuota" value="0" min="0">
+                            <select class="form-select" id="createQuotaUnit" style="max-width:120px">
+                                <option value="0">Unlimited</option>
+                                <option value="1048576">1 MB</option>
+                                <option value="5242880">5 MB</option>
+                                <option value="10485760">10 MB</option>
+                                <option value="52428800">50 MB</option>
+                                <option value="104857600">100 MB</option>
+                                <option value="524288000">500 MB</option>
+                                <option value="1073741824">1 GB</option>
+                                <option value="5368709120">5 GB</option>
+                                <option value="10737418240">10 GB</option>
+                            </select>
+                        </div>
+                        <small class="text-muted">0 = Unlimited</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitCreate()"><i class="ri-add-line"></i> Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ri-lock-password-line"></i> Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="pwEmail">
+                <p class="text-muted">Changing password for: <strong id="pwEmailDisplay"></strong></p>
+                <div class="mb-3">
+                    <label class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="newPassword" required minlength="6">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" id="newPasswordConfirm" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="submitPassword()"><i class="ri-check-line"></i> Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Quota Modal -->
+<div class="modal fade" id="quotaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ri-database-2-line"></i> Edit Quota</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="quotaEmail">
+                <p class="text-muted">Editing quota for: <strong id="quotaEmailDisplay"></strong></p>
+                <div class="mb-3">
+                    <label class="form-label">Quota (Mailbox Size Limit)</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="quotaValue" value="0" min="0">
+                        <select class="form-select" id="quotaUnit" style="max-width:120px">
+                            <option value="0">Unlimited</option>
+                            <option value="1048576">1 MB</option>
+                            <option value="5242880">5 MB</option>
+                            <option value="10485760">10 MB</option>
+                            <option value="52428800">50 MB</option>
+                            <option value="104857600">100 MB</option>
+                            <option value="524288000">500 MB</option>
+                            <option value="1073741824">1 GB</option>
+                            <option value="5368709120">5 GB</option>
+                            <option value="10737418240">10 GB</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitQuota()"><i class="ri-check-line"></i> Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterByDomain() {
+    const domain = document.getElementById('domainFilter').value;
+    window.location.href = '/email-accounts' + (domain ? '?domain=' + encodeURIComponent(domain) : '');
+}
+
+function openWebmail(email) {
+    whpToast('Opening Webmail', 'Logging in as ' + email, 'info');
+    
+    fetch('/api/email-accounts/auto-login?email=' + encodeURIComponent(email), {
+        credentials: 'same-origin'
+    })
+        .then(r => {
+            if (!r.ok) throw new Error('Server error ' + r.status);
+            return r.json();
+        })
+        .then(data => {
+            if (data.success && data.url) {
+                window.open(data.url, '_blank');
+            } else {
+                whpToast('Auto-login Failed', data.error || 'Could not retrieve credentials', 'error');
+            }
+        })
+        .catch(err => {
+            whpToast('Error', err.message, 'error');
+        });
+}
+
+function showCreateModal() {
+    if (document.getElementById('createDomain').options.length === 0) {
+        whpToast('No Domains', 'No email domains found. Add a website first to create email accounts.', 'error');
+        return;
+    }
+    document.getElementById('createUsername').value = '';
+    document.getElementById('createPassword').value = '';
+    document.getElementById('createPasswordConfirm').value = '';
+    document.getElementById('createQuota').value = '0';
+    document.getElementById('createQuotaUnit').value = '0';
+    new bootstrap.Modal(document.getElementById('createAccountModal')).show();
+}
+
+function submitCreate() {
+    const username = document.getElementById('createUsername').value.trim();
+    const domain = document.getElementById('createDomain').value;
+    const password = document.getElementById('createPassword').value;
+    const confirm = document.getElementById('createPasswordConfirm').value;
+    const quotaUnit = document.getElementById('createQuotaUnit').value;
+
+    if (password !== confirm) {
+        whpToast('Password Mismatch', 'Passwords do not match', 'error');
+        return;
+    }
+    if (password.length < 6) {
+        whpToast('Weak Password', 'Password must be at least 6 characters', 'error');
+        return;
+    }
+
+    fetch('/api/email-accounts/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: username + '@' + domain, password, domain, quota: parseInt(quotaUnit) })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            whpToast('Account Created', data.email, 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            whpToast('Error', data.error, 'error');
+        }
+    })
+    .catch(err => whpToast('Error', err.message, 'error'));
+}
+
+function showPasswordModal(email) {
+    document.getElementById('pwEmail').value = email;
+    document.getElementById('pwEmailDisplay').textContent = email;
+    document.getElementById('newPassword').value = '';
+    document.getElementById('newPasswordConfirm').value = '';
+    new bootstrap.Modal(document.getElementById('passwordModal')).show();
+}
+
+function submitPassword() {
+    const email = document.getElementById('pwEmail').value;
+    const password = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('newPasswordConfirm').value;
+
+    if (password !== confirm) {
+        whpToast('Password Mismatch', 'Passwords do not match', 'error');
+        return;
+    }
+    if (password.length < 6) {
+        whpToast('Weak Password', 'Password must be at least 6 characters', 'error');
+        return;
+    }
+
+    fetch('/api/email-accounts/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            whpToast('Password Updated', '', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            whpToast('Error', data.error, 'error');
+        }
+    })
+    .catch(err => whpToast('Error', err.message, 'error'));
+}
+
+function showQuotaModal(email, currentQuota) {
+    document.getElementById('quotaEmail').value = email;
+    document.getElementById('quotaEmailDisplay').textContent = email;
+    document.getElementById('quotaValue').value = currentQuota;
+    document.getElementById('quotaUnit').value = currentQuota;
+    new bootstrap.Modal(document.getElementById('quotaModal')).show();
+}
+
+function submitQuota() {
+    const email = document.getElementById('quotaEmail').value;
+    const quota = document.getElementById('quotaUnit').value;
+
+    fetch('/api/email-accounts/quota', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, quota: parseInt(quota) })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            whpToast('Quota Updated', '', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            whpToast('Error', data.error, 'error');
+        }
+    })
+    .catch(err => whpToast('Error', err.message, 'error'));
+}
+
+function toggleAccount(email) {
+    whpConfirm('Toggle Account?', 'This will enable/disable the email account.', function() {
+        fetch('/api/email-accounts/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                whpToast('Status Updated', '', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                whpToast('Error', data.error, 'error');
+            }
+        })
+        .catch(err => whpToast('Error', err.message, 'error'));
+    });
+}
+
+function deleteAccount(email) {
+    whpConfirm('Delete Account?', 'This will permanently delete the email account: ' + email, function() {
+        fetch('/api/email-accounts/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                whpToast('Account Deleted', '', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                whpToast('Error', data.error, 'error');
+            }
+        })
+        .catch(err => whpToast('Error', err.message, 'error'));
+    });
+}
+</script>

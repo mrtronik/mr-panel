@@ -1,0 +1,823 @@
+ <main class="page-content">
+    <div class="breadcrumb-bar"><a href="/dashboard">Home</a>
+	<i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> 
+	<a href="/websites">Websites</a> 
+	<i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> 
+	<span><%= website.domain %></span></div>
+
+    <!-- Hero Header -->
+    <div class="wd-hero">
+      <div class="wd-favicon"><i class="fa-solid fa-globe"></i></div>
+      <div class="wd-hero-info">
+        <h1><%= website.domain %> <span class="badge-soft <%= website.status === 'active' ? 'success' : 'danger' %>"><%= website.status === 'active' ? 'Active' : 'Suspended' %></span></h1>
+        <div class="wd-url">
+          <i class="fa-solid fa-link"></i>
+          <a href="https://<%= website.domain %>" target="_blank"><%= website.domain %></a>
+          <span style="color:var(--text-light)">·</span>
+          <i class="fa-solid fa-shield-halved" style="color:<%= website.ssl_status === 'active' ? '#10b981' : '#ef4444' %>"></i> SSL <%= website.ssl_status === 'active' ? 'Active' : 'Not Configured' %>
+          <span style="color:var(--text-light)">·</span>
+          <i class="fa-brands fa-php" style="color:#f59e0b"></i> PHP <span id="phpHeaderBadge"><%= website.php_version || '8.2' %></span>
+        </div>
+      </div>
+      <div class="wd-hero-actions">
+        <a class="btn-primary-soft nav-link " href="/file-manager"><i class="fa-solid fa-folder"></i> File Manager</a>
+        <button class="btn-ghost" onclick="whpToast('Backup Started','A full backup of <%= website.domain %> is being created.','info')"><i class="fa-solid fa-box-archive"></i> Backup</button>
+        <button class="btn-ghost" data-loading="2000" onclick="setTimeout(function(){whpToast('Cache Cleared','Cache for <%= website.domain %> has been purged.','success')},1500)"><i class="fa-solid fa-broom"></i> Clear Cache</button>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3"><div class="stat-card"><span class="stat-icon blue"><i class="fa-solid fa-shield-halved"></i></span><div class="stat-info"><p class="stat-label">SSL</p><p class="stat-value"><%= website.ssl_status === 'active' ? 'Active' : 'None' %></p></div></div></div>
+      <div class="col-6 col-md-3"><div class="stat-card"><span class="stat-icon green"><i class="fa-solid fa-gauge-high"></i></span><div class="stat-info"><p class="stat-label">Status</p><p class="stat-value"><%= website.status %></p></div></div></div>
+      <div class="col-6 col-md-3"><div class="stat-card"><span class="stat-icon purple"><i class="fa-brands fa-php"></i></span><div class="stat-info"><p class="stat-label">PHP Version</p><p class="stat-value"><%= website.php_version || '8.2' %></p></div></div></div>
+      <div class="col-6 col-md-3"><div class="stat-card"><span class="stat-icon amber"><i class="fa-solid fa-hard-drive"></i></span><div class="stat-info"><p class="stat-label">Disk Used</p><p class="stat-value" id="statDiskUsage">...</p></div></div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="wd-tabs">
+      <button class="wd-tab active" onclick="switchWdTab('tabOverview',this)"><i class="fa-solid fa-circle-info"></i> Overview</button>
+      <button class="wd-tab" onclick="switchWdTab('tabDomains',this)"><i class="fa-solid fa-at"></i> Domains</button>
+      <button class="wd-tab" onclick="switchWdTab('tabResources',this)"><i class="fa-solid fa-chart-column"></i> Resources</button>
+      <button class="wd-tab" onclick="switchWdTab('tabSsl',this)"><i class="fa-solid fa-shield-halved"></i> SSL</button>
+      <button class="wd-tab" onclick="switchWdTab('tabDeploy',this)"><i class="fa-solid fa-rocket"></i> Deployments</button>
+      <button class="wd-tab" onclick="switchWdTab('tabLogs',this)"><i class="fa-solid fa-list-ul"></i> Logs</button>
+      <button class="wd-tab" onclick="switchWdTab('tabSettings',this)"><i class="fa-solid fa-gear"></i> Settings</button>
+    </div>
+
+    <!-- Tab: Overview -->
+    <div class="wd-tab-pane active" id="tabOverview">
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="card-soft mb-3">
+            <div class="card-head"><h3>Website Information</h3></div>
+            <div class="card-body">
+              <div class="wd-info-grid">
+                <div class="wd-info-item">
+                  <div class="wd-label"><i class="fa-solid fa-user"></i> Owner</div>
+                  <div class="wd-value"><%= website.owner_name || 'Unassigned' %></div>
+                </div>
+                <div class="wd-info-item">
+                  <div class="wd-label"><i class="fa-solid fa-folder"></i> Document Root</div>
+                  <div class="wd-value"><%= website.document_root %></div>
+                </div>
+                <div class="wd-info-item">
+                  <div class="wd-label"><i class="fa-brands fa-php"></i> PHP Version</div>
+                  <div class="wd-value"><%= website.php_version || '8.2' %></div>
+                </div>
+                <div class="wd-info-item">
+                  <div class="wd-label"><i class="fa-solid fa-server"></i> Server</div>
+                  <div class="wd-value"><%= typeof system !== 'undefined' && system ? system.hostname : 'N/A' %></div>
+                </div>
+                <div class="wd-info-item">
+                  <div class="wd-label"><i class="fa-solid fa-calendar"></i> Created</div>
+                  <div class="wd-value"><%= new Date(website.created_at).toLocaleDateString() %></div>
+                </div>
+                <div class="wd-info-item">
+                  <div class="wd-label"><i class="fa-solid fa-shield-halved"></i> SSL Status</div>
+                  <div class="wd-value"><%= website.ssl_status === 'active' ? 'Active' : 'Not configured' %></div>
+                </div>
+                <div class="wd-info-item">
+                  <div class="wd-label"><i class="fa-solid fa-hard-drive"></i> Disk Quota</div>
+                  <div class="wd-value"><%= website.disk_quota ? (Math.round(website.disk_quota / 1024 / 1024) + ' MB') : 'Unlimited' %></div>
+                </div>
+                <div class="wd-info-item">
+                  <div class="wd-label"><i class="fa-solid fa-fire"></i> Bandwidth Quota</div>
+                  <div class="wd-value"><%= website.bandwidth_quota ? (Math.round(website.bandwidth_quota / 1024 / 1024) + ' MB') : 'Unlimited' %></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-5">
+          <div class="card-soft mb-3">
+            <div class="card-head"><h3>Traffic (Last 14 Days)</h3></div>
+            <div class="card-body">
+              <canvas id="wdTrafficChart" height="180"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="card-soft">
+            <div class="card-head"><h3>Technologies</h3></div>
+            <div class="card-body">
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <span class="badge-soft success"><i class="fa-brands fa-php"></i> PHP <%= website.php_version || '8.2' %></span>
+                <span class="badge-soft warning"><i class="fa-solid fa-database"></i> MySQL</span>
+                <span class="badge-soft info"><i class="fa-solid fa-cloud"></i> OpenLiteSpeed</span>
+                <% if (website.ssl_status === 'active') { %>
+                <span class="badge-soft success"><i class="fa-solid fa-shield-halved"></i> SSL Active</span>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card-soft">
+            <div class="card-head"><h3>Quick Actions</h3></div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
+                <a class="iconbox" href="/file-manager" style="padding:14px;flex-direction:row;gap:10px">
+                  <span class="icon-wrap" style="width:36px;height:36px"><i class="fa-solid fa-folder"></i></span>
+                  <span class="ib-text"><span class="ib-title" style="font-size:0.82rem">File Manager</span></span>
+                </a>
+                <a class="iconbox" href="/db-manager" style="padding:14px;flex-direction:row;gap:10px">
+                  <span class="icon-wrap" style="width:36px;height:36px"><i class="fa-solid fa-database"></i></span>
+                  <span class="ib-text"><span class="ib-title" style="font-size:0.82rem">Database</span></span>
+                </a>
+                <a class="iconbox" href="/ssl" style="padding:14px;flex-direction:row;gap:10px">
+                  <span class="icon-wrap" style="width:36px;height:36px"><i class="fa-solid fa-shield-halved"></i></span>
+                  <span class="ib-text"><span class="ib-title" style="font-size:0.82rem">SSL/TLS</span></span>
+                </a>
+                <a class="iconbox" href="/mail/accounts" style="padding:14px;flex-direction:row;gap:10px">
+                  <span class="icon-wrap" style="width:36px;height:36px"><i class="fa-solid fa-envelope"></i></span>
+                  <span class="ib-text"><span class="ib-title" style="font-size:0.82rem">Email</span></span>
+                </a>
+                <button class="iconbox" onclick="createBackup()" style="padding:14px;flex-direction:row;gap:10px;width:100%;border:none;background:transparent;cursor:pointer;text-align:left">
+                  <span class="icon-wrap" style="width:36px;height:36px"><i class="fa-solid fa-box-archive"></i></span>
+                  <span class="ib-text"><span class="ib-title" style="font-size:0.82rem">Backup</span></span>
+                </button>
+                <button class="iconbox" onclick="whpConfirm('Delete Website','This will permanently remove <%= website.domain %> and all its files. This cannot be undone.','danger',function(){deleteWebsite()})" style="padding:14px;flex-direction:row;gap:10px;width:100%;border:none;background:transparent;cursor:pointer;text-align:left">
+                  <span class="icon-wrap" style="width:36px;height:36px;color:#ef4444;background:rgba(239,68,68,0.12)"><i class="fa-solid fa-trash"></i></span>
+                  <span class="ib-text"><span class="ib-title" style="font-size:0.82rem;color:#ef4444">Delete Site</span></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Domains -->
+    <div class="wd-tab-pane" id="tabDomains">
+      <div class="card-soft mb-3">
+        <div class="card-head"><h3>Domain &amp; Aliases</h3></div>
+        <div class="card-body p-0">
+          <div class="wd-domain-row">
+            <span class="wd-dm-icon"><i class="fa-solid fa-globe"></i></span>
+            <span class="wd-dm-name"><%= website.domain %></span>
+            <span class="wd-dm-type">Primary Domain</span>
+            <span class="badge-soft success">Active</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-soft">
+        <div class="card-head"><h3>Redirects</h3></div>
+        <div class="card-body">
+          <p style="font-size:0.82rem;color:var(--text-light)">No redirects configured. Use .htaccess in your document root to set up redirects.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Resources -->
+    <div class="wd-tab-pane" id="tabResources">
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="card-soft">
+            <div class="card-head"><h3>Resource Usage</h3></div>
+            <div class="card-body">
+              <div class="wd-resource-bar">
+                <div class="wd-rb-head"><span class="wd-rb-label">Disk Space</span><span class="wd-rb-value" id="resDisk">Loading...</span></div>
+                <div class="wd-rb-track"><div class="wd-rb-fill" id="resDiskBar" style="width:0%"></div></div>
+              </div>
+              <div class="wd-resource-bar">
+                <div class="wd-rb-head"><span class="wd-rb-label">Bandwidth (this month)</span><span class="wd-rb-value">Unlimited</span></div>
+                <div class="wd-rb-track"><div class="wd-rb-fill" style="width:0%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card-soft">
+            <div class="card-head"><h3>Document Root</h3></div>
+            <div class="card-body">
+              <p style="font-size:0.85rem;font-family:monospace;color:var(--text-light);margin:0"><%= website.document_root %></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: SSL -->
+    <div class="wd-tab-pane" id="tabSsl">
+      <div class="card-soft">
+        <div class="card-head"><h3>SSL Certificate</h3></div>
+        <div class="card-body">
+          <div class="wd-info-grid">
+            <div class="wd-info-item">
+              <div class="wd-label"><i class="fa-solid fa-shield-halved"></i> Status</div>
+              <div class="wd-value"><%= website.ssl_status === 'active' ? 'Active' : 'Not configured' %></div>
+            </div>
+            <div class="wd-info-item">
+              <div class="wd-label"><i class="fa-solid fa-globe"></i> Domain</div>
+              <div class="wd-value"><%= website.domain %></div>
+            </div>
+          </div>
+          <div class="mt-3">
+            <a href="/ssl" class="btn-primary-soft" style="font-size:0.82rem"><i class="fa-solid fa-shield-halved"></i> Manage SSL Certificates</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Deployments -->
+    <div class="wd-tab-pane" id="tabDeploy">
+      <div class="card-soft">
+        <div class="card-head"><h3>Git Deployment</h3></div>
+        <div class="card-body">
+          <p style="font-size:0.82rem;color:var(--text-light)">Git deployment not configured. Upload files via File Manager or connect a Git repository.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Logs -->
+    <div class="wd-tab-pane" id="tabLogs">
+      <div class="card-soft">
+        <div class="card-head"><h3>Activity Logs</h3></div>
+        <div class="card-body" id="wdLogsBody">
+          <p style="font-size:0.82rem;color:var(--text-light)">Logs are available in <a href="/activity" style="color:var(--primary)">Activity Log</a>.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Settings -->
+    <div class="wd-tab-pane" id="tabSettings">
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="card-soft mb-3">
+            <div class="card-head"><h3>PHP Configuration</h3></div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label-soft">PHP Version</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <select class="form-soft" id="phpVersionSelect" style="flex:1" onchange="updatePhpVersion()">
+                    <option value="">Loading...</option>
+                  </select>
+                  <span id="phpBadge" style="font-size:0.72rem;padding:4px 10px;border-radius:20px;background:var(--primary-light);color:var(--primary);font-weight:600;white-space:nowrap">
+                    <%= website.php_version || '8.2' %>
+                  </span>
+                </div>
+                <div id="phpVersionMsg" style="font-size:0.72rem;margin-top:6px;display:none"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-soft mb-3">
+            <div class="card-head"><h3>php.ini Settings</h3> <span style="font-size:0.7rem;color:var(--text-light)">.user.ini — applies immediately</span></div>
+            <div class="card-body" id="phpIniBody">
+              <div style="text-align:center;padding:20px;color:var(--text-light)"><i class="fa-solid fa-spinner fa-spin"></i> Loading settings...</div>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">
+              <button class="btn-ghost btn-sm" onclick="resetPhpSettings()" style="font-size:0.78rem"><i class="fa-solid fa-rotate-left"></i> Reset to Defaults</button>
+              <button class="btn-primary-soft btn-sm" id="btnSavePhp" onclick="savePhpSettings()" style="font-size:0.78rem"><i class="fa-solid fa-floppy-disk"></i> Save PHP Settings</button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card-soft mb-3">
+            <div class="card-head"><h3>Security</h3></div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center py-2"><div><div style="font-weight:600;font-size:0.88rem">Force HTTPS</div><div style="font-size:0.74rem;color:var(--text-light)">Redirect all traffic to HTTPS</div></div><div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" checked style="width:2.5em;height:1.3em" /></div></div>
+              <div class="d-flex justify-content-between align-items-center py-2"><div><div style="font-weight:600;font-size:0.88rem">Hotlink Protection</div><div style="font-size:0.74rem;color:var(--text-light)">Prevent other sites from embedding your assets</div></div><div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" id="hotlinkToggle" style="width:2.5em;height:1.3em" onchange="toggleHotlink()" /></div></div>
+              <div id="hotlinkSettings" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-color)">
+                <label class="form-label-soft" style="font-size:0.78rem">Allowed Domains (comma separated)</label>
+                <input type="text" class="form-soft" id="hotlinkDomains" placeholder="example.com, cdn.example.com" style="font-size:0.82rem">
+                <button class="btn-primary-soft btn-sm mt-2" onclick="saveHotlink()" style="font-size:0.78rem"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+              </div>
+              <div class="d-flex justify-content-between align-items-center py-2"><div><div style="font-weight:600;font-size:0.88rem">Maintenance Mode</div><div style="font-size:0.74rem;color:var(--text-light)">Show maintenance page to visitors</div></div><div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" style="width:2.5em;height:1.3em" onchange="whpToast('Maintenance Mode '+(this.checked?'Enabled':'Disabled'),this.checked?'Visitors will see maintenance page.':'Site is live again.',this.checked?'warning':'success')" /></div></div>
+            </div>
+          </div>
+
+          <div class="card-soft mb-3">
+            <div class="card-head"><h3><i class="fa-solid fa-triangle-exclamation"></i> Error Pages</h3></div>
+            <div class="card-body" id="errorPagesBody">
+              <div style="text-align:center;padding:10px;color:var(--text-light)"><i class="fa-solid fa-spinner fa-spin"></i></div>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid var(--border-color)">
+              <div style="display:flex;gap:6px;align-items:end;flex-wrap:wrap">
+                <div style="width:80px"><label class="form-label-soft" style="font-size:0.72rem">Code</label><select class="form-soft" id="epCode" style="font-size:0.82rem;width:100%"><option>404</option><option>403</option><option>500</option><option>502</option><option>503</option></select></div>
+                <div style="flex:1;min-width:150px"><label class="form-label-soft" style="font-size:0.72rem">File Path</label><input type="text" class="form-soft" id="epFile" placeholder="/404.html" style="font-size:0.82rem;width:100%"></div>
+                <button class="btn-primary-soft btn-sm" onclick="addErrorPage()" style="font-size:0.78rem"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Directory Privacy + MIME Types row -->
+      <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+          <div class="card-soft mb-3">
+            <div class="card-head"><h3><i class="fa-solid fa-lock"></i> Directory Privacy</h3></div>
+            <div class="card-body" id="dirPrivacyBody">
+              <div style="text-align:center;padding:10px;color:var(--text-light)"><i class="fa-solid fa-spinner fa-spin"></i></div>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid var(--border-color)">
+              <div style="display:flex;gap:6px;align-items:end;flex-wrap:wrap">
+                <div style="flex:1;min-width:120px"><label class="form-label-soft" style="font-size:0.72rem">Folder</label><input type="text" class="form-soft" id="dpPath" placeholder="/admin" style="font-size:0.82rem;width:100%"></div>
+                <div style="width:100px"><label class="form-label-soft" style="font-size:0.72rem">Username</label><input type="text" class="form-soft" id="dpUser" style="font-size:0.82rem;width:100%"></div>
+                <div style="width:100px"><label class="form-label-soft" style="font-size:0.72rem">Password</label><input type="password" class="form-soft" id="dpPass" style="font-size:0.82rem;width:100%"></div>
+                <button class="btn-primary-soft btn-sm" onclick="addDirPrivacy()" style="font-size:0.78rem"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card-soft mb-3">
+            <div class="card-head"><h3><i class="fa-solid fa-file-code"></i> MIME Types</h3></div>
+            <div class="card-body" id="mimeBody">
+              <div style="text-align:center;padding:10px;color:var(--text-light)"><i class="fa-solid fa-spinner fa-spin"></i></div>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid var(--border-color)">
+              <div style="display:flex;gap:6px;align-items:end;flex-wrap:wrap">
+                <div style="width:80px"><label class="form-label-soft" style="font-size:0.72rem">Extension</label><input type="text" class="form-soft" id="mimeExt" placeholder=".wasm" style="font-size:0.82rem;width:100%"></div>
+                <div style="flex:1;min-width:150px"><label class="form-label-soft" style="font-size:0.72rem">MIME Type</label><input type="text" class="form-soft" id="mimeType" placeholder="application/wasm" style="font-size:0.82rem;width:100%"></div>
+                <button class="btn-primary-soft btn-sm" onclick="addMimeType()" style="font-size:0.78rem"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn-ghost">Discard</button>
+        <button class="btn-primary-soft" data-loading="2000" onclick="setTimeout(function(){whpToast('Settings Saved','Website settings have been saved successfully.','success')},1500)"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+      </div>
+
+      <div class="card-soft mt-3">
+        <div class="card-head"><h3><i class="fa-solid fa-user-pen"></i> Change Owner</h3></div>
+        <div class="card-body">
+          <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:12px">
+            Current owner: <strong><%= website.owner_name || 'Unassigned' %></strong>
+            <% if (website.user_id) { %> (ID: <%= website.user_id %>)<% } %>
+          </p>
+          <form action="/websites/<%= website.id %>/change-owner" method="POST" style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+            <div style="flex:1;min-width:200px">
+              <label class="form-label-soft">Assign to User</label>
+              <select name="owner_id" class="form-soft">
+                <option value="">-- Unassigned --</option>
+                <% if (typeof users !== 'undefined' && users.length > 0) { %>
+                  <% users.forEach(function(u) { %>
+                    <option value="<%= u.id %>" <%= website.user_id == u.id ? 'selected' : '' %>>
+                      <%= u.name || u.username || u.email %> (<%= u.role %>)
+                    </option>
+                  <% }); %>
+                <% } %>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary-soft" style="white-space:nowrap">
+              <i class="fa-solid fa-check"></i> Save Owner
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script>
+// Traffic chart (Overview tab)
+document.addEventListener('DOMContentLoaded', function () {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  var textColor = isDark ? '#94a3b8' : '#64748b';
+  var primaryColor = isDark ? '#60a5fa' : '#1e3a8a';
+
+  var tCtx = document.getElementById('wdTrafficChart');
+  if (tCtx && typeof Chart !== 'undefined') {
+    var labels = [];
+    for (var i = 13; i >= 0; i--) { labels.push(i === 0 ? 'Today' : (i + 'd ago')); }
+    var visitors = [820, 910, 750, 1100, 1240, 980, 1450, 1320, 1180, 1620, 1480, 1750, 1520, 1890];
+    new Chart(tCtx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Visitors',
+          data: visitors,
+          borderColor: primaryColor,
+          backgroundColor: isDark ? 'rgba(96,165,250,0.12)' : 'rgba(30,58,138,0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 5
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, maxTicksLimit: 7 } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  // Resource chart (Resources tab)
+  var rCtx = document.getElementById('wdResourceChart');
+  if (rCtx && typeof Chart !== 'undefined') {
+    var rLabels = [];
+    for (var j = 23; j >= 0; j--) { rLabels.push(j + 'h'); }
+    new Chart(rCtx, {
+      type: 'line',
+      data: {
+        labels: rLabels,
+        datasets: [
+          {
+            label: 'CPU %', data: [18, 22, 15, 12, 10, 8, 11, 14, 20, 28, 35, 42, 38, 30, 25, 33, 41, 36, 29, 24, 19, 16, 14, 23],
+            borderColor: primaryColor, backgroundColor: isDark ? 'rgba(96,165,250,0.1)' : 'rgba(30,58,138,0.08)',
+            borderWidth: 2, fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4
+          },
+          {
+            label: 'Memory %', data: [62, 64, 60, 58, 55, 56, 60, 65, 70, 73, 75, 78, 80, 76, 72, 74, 77, 75, 71, 68, 66, 64, 63, 75],
+            borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)',
+            borderWidth: 2, fill: false, tension: 0.35, pointRadius: 0, pointHoverRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: textColor, font: { size: 11 }, boxWidth: 12 } } },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 }, maxTicksLimit: 8 } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, callback: function (v) { return v + '%'; } }, max: 100 }
+        }
+      }
+    });
+  }
+});
+
+// Re-render charts when theme changes
+var origToggleTheme = window.toggleTheme;
+if (origToggleTheme) {
+  window.toggleTheme = function () {
+    origToggleTheme();
+    setTimeout(function () { location.reload(); }, 100);
+  };
+}
+
+// PHP Selector
+var WEBSITE_ID = '<%= website.id %>';
+var CURRENT_PHP = '<%= website.php_version || "8.2" %>';
+
+function loadPhpVersions() {
+  fetch('/api/php/available', { credentials: 'include' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var sel = document.getElementById('phpVersionSelect');
+      if (!sel) return;
+      var versions = data.versions || [];
+      sel.innerHTML = '';
+      if (versions.length === 0) {
+        sel.innerHTML = '<option value="">No PHP versions found</option>';
+        return;
+      }
+      versions.forEach(function(v) {
+        var opt = document.createElement('option');
+        opt.value = v.version;
+        if (v.installed) {
+          opt.textContent = 'PHP ' + v.version + (v.active ? ' (Default)' : ' (Installed)');
+        } else {
+          opt.textContent = 'PHP ' + v.version + ' (Not Installed)';
+          opt.disabled = true;
+        }
+        if (v.version === CURRENT_PHP) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    })
+    .catch(function() {
+      var sel = document.getElementById('phpVersionSelect');
+      if (sel) sel.innerHTML = '<option value="8.2">PHP 8.2</option><option value="8.1">PHP 8.1</option>';
+    });
+}
+
+function updatePhpVersion() {
+  var sel = document.getElementById('phpVersionSelect');
+  var msg = document.getElementById('phpVersionMsg');
+  var badge = document.getElementById('phpBadge');
+  var ver = sel.value;
+  if (!ver || ver === CURRENT_PHP) return;
+
+  msg.style.display = 'block';
+  msg.style.color = 'var(--primary)';
+  msg.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Changing to PHP ' + ver + '...';
+
+  fetch('/websites/' + WEBSITE_ID + '/php-version', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ php_version: ver })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      CURRENT_PHP = ver;
+      badge.textContent = ver;
+      var headerBadge = document.getElementById('phpHeaderBadge');
+      if (headerBadge) headerBadge.textContent = ver;
+      msg.style.color = '#28a745';
+      msg.innerHTML = '<i class="fa-solid fa-check"></i> Changed to PHP ' + ver;
+      whpToast('PHP Updated', 'Now using PHP ' + ver, 'success');
+    } else {
+      msg.style.color = '#dc3545';
+      msg.innerHTML = '<i class="fa-solid fa-times"></i> ' + (d.error || 'Failed');
+      sel.value = CURRENT_PHP;
+    }
+  })
+  .catch(function(err) {
+    msg.style.color = '#dc3545';
+    msg.innerHTML = '<i class="fa-solid fa-times"></i> Network error';
+    sel.value = CURRENT_PHP;
+  });
+}
+
+loadPhpVersions();
+
+// php.ini Manager
+var PHP_INI_SETTINGS = {};
+var PHP_INI_DEFAULTS = {};
+
+function loadPhpSettings() {
+  fetch('/websites/' + WEBSITE_ID + '/php-settings', { credentials: 'include' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.success) return;
+      PHP_INI_SETTINGS = data.settings || {};
+      PHP_INI_DEFAULTS = data.serverDefaults || {};
+      renderPhpIniForm();
+    })
+    .catch(function() {
+      document.getElementById('phpIniBody').innerHTML = '<div style="color:#dc3545;padding:12px">Failed to load settings</div>';
+    });
+}
+
+function renderPhpIniForm() {
+  var body = document.getElementById('phpIniBody');
+  var html = '';
+  var categories = {
+    'Resource Limits': ['memory_limit', 'max_execution_time', 'max_input_time', 'max_file_uploads', 'post_max_size'],
+    'File Uploads': ['upload_max_filesize', 'file_uploads'],
+    'Error Handling': ['display_errors', 'error_reporting', 'log_errors', 'error_log'],
+    'Sessions': ['session.auto_start', 'session.gc_maxlifetime', 'session.cookie_lifetime', 'session.save_handler'],
+    'OPcache': ['opcache.enable', 'opcache.memory_consumption', 'opcache.max_accelerated_files', 'opcache.validate_timestamps'],
+    'General': ['date.timezone', 'short_open_tag', 'allow_url_fopen', 'allow_url_include', 'cgi.fix_pathinfo', 'expose_php', 'output_buffering']
+  };
+
+  Object.entries(categories).forEach(function(cat) {
+    var keys = cat[1];
+    var hasAny = keys.some(function(k) { return PHP_INI_SETTINGS[k] !== undefined; });
+    if (!hasAny) return;
+
+    html += '<div style="margin-bottom:12px">';
+    html += '<div style="font-size:0.72rem;font-weight:600;color:var(--text-light);text-transform:uppercase;margin-bottom:6px">' + cat[0] + '</div>';
+
+    keys.forEach(function(key) {
+      if (PHP_INI_SETTINGS[key] === undefined) return;
+      var val = PHP_INI_SETTINGS[key] || '';
+      var isToggle = ['display_errors', 'opcache.enable', 'session.auto_start', 'short_open_tag', 'allow_url_fopen', 'allow_url_include', 'expose_php', 'log_errors', 'opcache.validate_timestamps'].includes(key);
+      var isNumeric = ['max_execution_time', 'max_input_time', 'max_file_uploads', 'opcache.memory_consumption', 'opcache.max_accelerated_files', 'session.gc_maxlifetime', 'session.cookie_lifetime', 'output_buffering'].includes(key);
+
+      html += '<div style="margin-bottom:6px">';
+      html += '<label style="font-size:0.72rem;color:var(--text-light);margin-bottom:2px;display:block;font-family:monospace">' + key + '</label>';
+
+      if (isToggle) {
+        var on = val === '1' || val.toLowerCase() === 'on';
+        html += '<div style="display:flex;gap:8px;align-items:center">';
+        html += '<div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" data-key="' + key + '" ' + (on ? 'checked' : '') + ' style="width:2.2em;height:1.2em" onchange="updateSetting(this,\'' + key + '\',this.checked)"></div>';
+        html += '<span style="font-size:0.7rem;color:var(--text-light)">' + (on ? 'On' : 'Off') + '</span>';
+        html += '</div>';
+      } else {
+        html += '<input class="form-soft" style="width:100%;font-size:0.78rem;padding:5px 8px" data-key="' + key + '" value="' + val.replace(/"/g, '&quot;') + '" onchange="updateSetting(this,\'' + key + '\',this.value)">';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+
+  if (!html) html = '<div style="padding:12px;color:var(--text-light);font-size:0.82rem">No settings found. Create a .user.ini file in your document root.</div>';
+  body.innerHTML = html;
+}
+
+function updateSetting(el, key, value) {
+  if (el.type === 'checkbox') {
+    var span = el.closest('.form-check').nextElementSibling;
+    if (span) span.textContent = value ? 'On' : 'Off';
+    PHP_INI_SETTINGS[key] = value ? '1' : '0';
+  } else {
+    PHP_INI_SETTINGS[key] = value;
+  }
+}
+
+function savePhpSettings() {
+  var btn = document.getElementById('btnSavePhp');
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+  btn.disabled = true;
+
+  fetch('/websites/' + WEBSITE_ID + '/php-settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ settings: PHP_INI_SETTINGS })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save PHP Settings';
+    btn.disabled = false;
+    if (d.success) {
+      whpToast('Saved', 'PHP settings updated', 'success');
+    } else {
+      whpToast('Error', d.error || 'Failed to save', 'error');
+    }
+  })
+  .catch(function() {
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save PHP Settings';
+    btn.disabled = false;
+    whpToast('Error', 'Network error', 'error');
+  });
+}
+
+function resetPhpSettings() {
+  whpConfirm('Reset?', 'Reset all PHP settings to server defaults?', function() {
+    fetch('/websites/' + WEBSITE_ID + '/php-settings', { credentials: 'include' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success && data.serverDefaults) {
+          var settings = {};
+          Object.keys(data.settings).forEach(function(k) {
+            settings[k] = data.serverDefaults[k] !== undefined ? data.serverDefaults[k] : '';
+          });
+          PHP_INI_SETTINGS = settings;
+          renderPhpIniForm();
+          whpToast('Reset', 'Settings reset to defaults. Click Save to apply.', 'info');
+        }
+      });
+  });
+}
+
+loadPhpSettings();
+
+// ═══════════════════════════════════════
+//  Phase 1: Website Settings
+// ═══════════════════════════════════════
+var SITE_DOMAIN = '<%= website.domain %>';
+
+// ─── Error Pages ──────────────────────
+function loadErrorPages() {
+  fetch('/websites/' + SITE_DOMAIN + '/settings/error-pages', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    var html = '';
+    var codes = Object.keys(d.pages || {});
+    if (codes.length === 0) { html = '<div style="text-align:center;padding:10px;color:var(--text-light);font-size:0.82rem">No custom error pages configured</div>'; }
+    else {
+      codes.forEach(function(code) {
+        var p = d.pages[code];
+        var status = p.exists ? '<span class="badge bg-success" style="font-size:0.65rem">exists</span>' : '<span class="badge bg-danger" style="font-size:0.65rem">missing</span>';
+        html += '<div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--border-color)">';
+        html += '<div><strong style="font-size:0.88rem">' + code + '</strong> <span style="font-size:0.78rem;color:var(--text-light)">' + p.file + '</span> ' + status + '</div>';
+        html += '<button class="btn btn-xs btn-outline btn-danger" onclick="removeErrorPage(\'' + code + '\')"><i class="fa-solid fa-trash"></i></button>';
+        html += '</div>';
+      });
+    }
+    document.getElementById('errorPagesBody').innerHTML = html;
+  });
+}
+function addErrorPage() {
+  var code = document.getElementById('epCode').value;
+  var file = document.getElementById('epFile').value.trim();
+  if (!file) return whpToast('Warning','File path required','warning');
+  fetch('/websites/' + SITE_DOMAIN + '/settings/error-pages', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({domain:SITE_DOMAIN,code:code,file:file})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){whpToast('Added','','success');loadErrorPages();document.getElementById('epFile').value=''}
+    else whpToast('Error',d.error,'error');
+  });
+}
+function removeErrorPage(code) {
+  whpConfirm('Remove?','Remove error page ' + code + '?',function(){
+    fetch('/websites/' + SITE_DOMAIN + '/settings/error-pages', {method:'DELETE',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({domain:SITE_DOMAIN,code:code})})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.success){whpToast('Removed','','success');loadErrorPages()}
+      else whpToast('Error',d.error,'error');
+    });
+  });
+}
+
+// ─── Hotlink Protection ───────────────
+function loadHotlink() {
+  fetch('/websites/' + SITE_DOMAIN + '/settings/hotlink', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    document.getElementById('hotlinkToggle').checked = d.enabled;
+    document.getElementById('hotlinkDomains').value = (d.allowed_domains || []).join(', ');
+    document.getElementById('hotlinkSettings').style.display = d.enabled ? 'block' : 'none';
+  });
+}
+function toggleHotlink() {
+  var enabled = document.getElementById('hotlinkToggle').checked;
+  document.getElementById('hotlinkSettings').style.display = enabled ? 'block' : 'none';
+  saveHotlink();
+}
+function saveHotlink() {
+  var enabled = document.getElementById('hotlinkToggle').checked;
+  var domains = document.getElementById('hotlinkDomains').value.split(',').map(function(d){return d.trim()}).filter(Boolean);
+  fetch('/websites/' + SITE_DOMAIN + '/settings/hotlink', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({domain:SITE_DOMAIN,enabled:enabled,allowed_domains:domains})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success) whpToast('Saved','','success');
+    else whpToast('Error',d.error,'error');
+  });
+}
+
+// ─── Directory Privacy ────────────────
+function loadDirPrivacy() {
+  fetch('/websites/' + SITE_DOMAIN + '/settings/dir-privacy', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    var html = '';
+    var dirs = d.dirs || [];
+    if (dirs.length === 0) { html = '<div style="text-align:center;padding:10px;color:var(--text-light);font-size:0.82rem">No protected directories</div>'; }
+    else {
+      dirs.forEach(function(item) {
+        html += '<div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--border-color)">';
+        html += '<div><i class="fa-solid fa-lock" style="color:#10b981;margin-right:6px"></i><strong style="font-size:0.88rem">' + item.path + '</strong> <span style="font-size:0.74rem;color:var(--text-light)">(' + item.username + ')</span></div>';
+        html += '<button class="btn btn-xs btn-outline btn-danger" onclick="removeDirPrivacy(\'' + item.path + '\')"><i class="fa-solid fa-trash"></i></button>';
+        html += '</div>';
+      });
+    }
+    document.getElementById('dirPrivacyBody').innerHTML = html;
+  });
+}
+function addDirPrivacy() {
+  var p = document.getElementById('dpPath').value.trim();
+  var u = document.getElementById('dpUser').value.trim();
+  var pw = document.getElementById('dpPass').value;
+  if (!p || !u || !pw) return whpToast('Warning','All fields required','warning');
+  fetch('/websites/' + SITE_DOMAIN + '/settings/dir-privacy', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({domain:SITE_DOMAIN,path:p,username:u,password:pw})})
+  .then(function(r){return r.json()}).then(function(d){
+    if(d.success){whpToast('Protected','','success');loadDirPrivacy();document.getElementById('dpPath').value='';document.getElementById('dpUser').value='';document.getElementById('dpPass').value=''}
+    else whpToast('Error',d.error,'error');
+  });
+}
+function removeDirPrivacy(p) {
+  whpConfirm('Remove?','Remove protection from ' + p + '?',function(){
+    fetch('/websites/' + SITE_DOMAIN + '/settings/dir-privacy', {method:'DELETE',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({domain:SITE_DOMAIN,path:p})})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.success){whpToast('Removed','','success');loadDirPrivacy()}
+      else whpToast('Error',d.error,'error');
+    });
+  });
+}
+
+// ─── MIME Types ───────────────────────
+function loadMimeTypes() {
+  fetch('/websites/' + SITE_DOMAIN + '/settings/mime', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    var html = '';
+    var types = d.types || {};
+    var keys = Object.keys(types);
+    if (keys.length === 0) { html = '<div style="text-align:center;padding:10px;color:var(--text-light);font-size:0.82rem">No custom MIME types</div>'; }
+    else {
+      keys.forEach(function(ext) {
+        html += '<div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--border-color)">';
+        html += '<div><code style="font-size:0.82rem">' + ext + '</code> <span style="font-size:0.78rem;color:var(--text-light)">' + types[ext] + '</span></div>';
+        html += '<button class="btn btn-xs btn-outline btn-danger" onclick="removeMimeType(\'' + ext + '\')"><i class="fa-solid fa-trash"></i></button>';
+        html += '</div>';
+      });
+    }
+    document.getElementById('mimeBody').innerHTML = html;
+  });
+}
+function addMimeType() {
+  var ext = document.getElementById('mimeExt').value.trim();
+  var mime = document.getElementById('mimeType').value.trim();
+  if (!ext || !mime) return whpToast('Warning','All fields required','warning');
+  fetch('/websites/' + SITE_DOMAIN + '/settings/mime', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    var types = d.types || {};
+    types[ext] = mime;
+    return fetch('/websites/' + SITE_DOMAIN + '/settings/mime', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({domain:SITE_DOMAIN,types:types})});
+  }).then(function(r){return r.json()}).then(function(d){
+    if(d.success){whpToast('Added','','success');loadMimeTypes();document.getElementById('mimeExt').value='';document.getElementById('mimeType').value=''}
+    else whpToast('Error',d.error,'error');
+  });
+}
+function removeMimeType(ext) {
+  whpConfirm('Remove?','Remove MIME type ' + ext + '?',function(){
+    fetch('/websites/' + SITE_DOMAIN + '/settings/mime', {credentials:'include'})
+    .then(function(r){return r.json()}).then(function(d){
+      var types = d.types || {};
+      delete types[ext];
+      return fetch('/websites/' + SITE_DOMAIN + '/settings/mime', {method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({domain:SITE_DOMAIN,types:types})});
+    }).then(function(r){return r.json()}).then(function(d){
+      if(d.success){whpToast('Removed','','success');loadMimeTypes()}
+      else whpToast('Error',d.error,'error');
+    });
+  });
+}
+
+// Load all settings on tab switch
+loadErrorPages();
+loadHotlink();
+loadDirPrivacy();
+loadMimeTypes();
+</script>

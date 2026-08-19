@@ -1,0 +1,201 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper">
+    <!-- Left Sidebar -->
+    <div class="pma-sidebar">
+      <div class="pma-sidebar-header">
+        <a href="/db-manager" class="pma-breadcrumb"><i class="fa-solid fa-database"></i> <%= dbName %></a>
+      </div>
+      <div class="pma-tree">
+        <% tables.forEach(function(t) { %>
+        <div class="pma-tree-item <%= t === tableName ? 'active' : '' %>">
+          <a href="/db-manager/<%= dbName %>/browse/<%= t %>" class="tree-link">
+            <i class="fa-solid fa-table tree-icon-sm"></i> <%= t %>
+          </a>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="pma-main">
+      <div class="pma-nav">
+        <span class="pma-nav-title">
+          <a href="/db-manager/<%= dbName %>" class="pma-breadcrumb"><%= dbName %></a>
+          <i class="fa-solid fa-angle-right" style="font-size:0.7em"></i>
+          <%= tableName %>
+        </span>
+        <div class="pma-tabs">
+          <a href="/db-manager/<%= dbName %>/structure/<%= tableName %>" class="pma-tab">Structure</a>
+          <a href="/db-manager/<%= dbName %>/browse/<%= tableName %>" class="pma-tab active">Browse</a>
+          <a href="/db-manager/<%= dbName %>/sql?table=<%= tableName %>" class="pma-tab">SQL</a>
+          <a href="/db-manager/<%= dbName %>/export?table=<%= tableName %>" class="pma-tab">Export</a>
+        </div>
+      </div>
+
+      <div class="pma-content">
+        <div class="pma-info-bar">
+          <span><%= total %> rows</span>
+          <span>Page <%= page %> / <%= totalPages || 1 %></span>
+        </div>
+
+        <!-- Search -->
+        <form method="GET" class="pma-search-bar">
+          <input type="text" name="search" value="<%= search %>" class="form-control form-control-sm" placeholder="Search...">
+          <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-search"></i></button>
+          <% if (search) { %><a href="/db-manager/<%= dbName %>/browse/<%= tableName %>" class="btn btn-sm btn-outline">Clear</a><% } %>
+        </form>
+
+        <div class="pma-box">
+          <table class="pma-table pma-table-browse">
+            <thead>
+              <tr>
+                <th style="width:40px"><input type="checkbox" class="form-check-input" onclick="toggleAll(this)"></th>
+                <% columns.forEach(function(col) { %>
+                <th>
+                  <a href="?<%= search ? 'search=' + encodeURIComponent(search) + '&' : '' %><%= currentSort === col && currentDir === 'ASC' ? 'sort=' + col + '&dir=DESC' : 'sort=' + col + '&dir=ASC' %>">
+                    <%= col %>
+                    <% if (currentSort === col) { %><i class="fa-solid fa-caret-<%= currentDir === 'ASC' ? 'up' : 'down' %>"></i><% } %>
+                  </a>
+                </th>
+                <% }); %>
+                <th style="width:80px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (data.length === 0) { %>
+              <tr><td colspan="<%= columns.length + 2 %>" class="text-center text-muted p-3">No rows found</td></tr>
+              <% } else { %>
+              <% data.forEach(function(row) { %>
+              <tr>
+                <td><input type="checkbox" class="form-check-input row-check" value=""></td>
+                <% columns.forEach(function(col) { %>
+                <td class="pma-cell" title="<%= row[col] !== null ? String(row[col]).replace(/"/g, '&quot;') : 'NULL' %>"><%- row[col] !== null ? String(row[col]).substring(0, 120).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '<span class="text-muted">NULL</span>' %></td>
+                <% }); %>
+                <td class="pma-actions">
+                  <button class="btn btn-xs btn-outline" title="Edit" onclick="editRow(this)" data-row='<%= JSON.stringify(row) %>'><i class="fa-solid fa-pen"></i></button>
+                  <button class="btn btn-xs btn-outline btn-danger" title="Delete" onclick="deleteRow(this)" data-row='<%= JSON.stringify(row) %>'><i class="fa-solid fa-trash"></i></button>
+                </td>
+              </tr>
+              <% }); %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+        <% if (totalPages > 1) { %>
+        <div class="pma-pagination">
+          <a href="?page=1<%= search ? '&search=' + encodeURIComponent(search) : '' %><%= currentSort ? '&sort=' + currentSort + '&dir=' + currentDir : '' %>" class="btn btn-sm btn-outline">&laquo;</a>
+          <a href="?page=<%= Math.max(1, page - 1) %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= currentSort ? '&sort=' + currentSort + '&dir=' + currentDir : '' %>" class="btn btn-sm btn-outline">&lsaquo;</a>
+          <span class="pma-page-info">Page <%= page %> / <%= totalPages %></span>
+          <a href="?page=<%= Math.min(totalPages, page + 1) %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= currentSort ? '&sort=' + currentSort + '&dir=' + currentDir : '' %>" class="btn btn-sm btn-outline">&rsaquo;</a>
+          <a href="?page=<%= totalPages %><%= search ? '&search=' + encodeURIComponent(search) : '' %><%= currentSort ? '&sort=' + currentSort + '&dir=' + currentDir : '' %>" class="btn btn-sm btn-outline">&raquo;</a>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Insert Modal -->
+<div class="modal fade" id="insertModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-plus"></i> Insert Row</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="insertFormBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="submitInsert()">Insert</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-pen"></i> Edit Row</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body" id="editFormBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="submitEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var DB_NAME = '<%= dbName %>';
+var TABLE_NAME = '<%= tableName %>';
+var COLUMNS = <%- JSON.stringify(columns) %>;
+
+function toggleAll(el) {
+    document.querySelectorAll('.row-check').forEach(function(c) { c.checked = el.checked; });
+}
+
+// Insert
+function showInsertModal() {
+    var html = '';
+    COLUMNS.forEach(function(col) {
+        html += '<div class="mb-2"><label class="form-label form-label-sm">' + col + '</label><input type="text" class="form-control form-control-sm" data-col="' + col + '"></div>';
+    });
+    document.getElementById('insertFormBody').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('insertModal')).show();
+}
+function submitInsert() {
+    var data = {};
+    document.querySelectorAll('#insertFormBody input').forEach(function(inp) {
+        var v = inp.value.trim();
+        data[inp.dataset.col] = v === '' ? null : v;
+    });
+    fetch('/api/db-manager/insert/' + DB_NAME + '/' + TABLE_NAME, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+        body: JSON.stringify({ data: data })
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Inserted','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+
+// Edit
+function editRow(btn) {
+    var row = JSON.parse(btn.dataset.row);
+    var html = '';
+    COLUMNS.forEach(function(col) {
+        var val = row[col] !== null ? String(row[col]) : '';
+        html += '<div class="mb-2"><label class="form-label form-label-sm">' + col + '</label><input type="text" class="form-control form-control-sm" data-col="' + col + '" value="' + val.replace(/"/g, '&quot;') + '"></div>';
+    });
+    document.getElementById('editFormBody').innerHTML = html;
+    document.getElementById('editFormBody').dataset.original = JSON.stringify(row);
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+function submitEdit() {
+    var original = JSON.parse(document.getElementById('editFormBody').dataset.original);
+    var newData = {};
+    document.querySelectorAll('#editFormBody input').forEach(function(inp) {
+        newData[inp.dataset.col] = inp.value.trim() === '' ? null : inp.value.trim();
+    });
+    fetch('/api/db-manager/update/' + DB_NAME + '/' + TABLE_NAME, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+        body: JSON.stringify({ original: original, data: newData })
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Updated','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+
+// Delete
+function deleteRow(btn) {
+    var row = JSON.parse(btn.dataset.row);
+    whpConfirm('Delete?', 'Delete this row?', function() {
+        fetch('/api/db-manager/delete-row/' + DB_NAME + '/' + TABLE_NAME, {
+            method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+            body: JSON.stringify({ data: row })
+        }).then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Deleted','','success');setTimeout(function(){location.reload()},500)}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+</script>

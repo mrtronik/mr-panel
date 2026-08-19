@@ -1,0 +1,591 @@
+/* ══════════════════════════════════════════════
+   MR Panel Cache — Admin UI
+   Brand: #6379c3 → #4254ba
+   ══════════════════════════════════════════════ */
+
+.mrp-wrap {
+    max-width: 1100px;
+    margin: 20px auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    color: #1d2327;
+}
+
+.mrp-wrap *,
+.mrp-wrap *::before,
+.mrp-wrap *::after {
+    box-sizing: border-box;
+}
+
+/* ─── Header ────────────────────────────── */
+
+.mrp-header {
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e2e4e7;
+}
+
+.mrp-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: #1d2327;
+    letter-spacing: -0.3px;
+}
+
+.mrp-header p {
+    margin: 0;
+    color: #646970;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* ─── Notice ────────────────────────────── */
+
+.mrp-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.mrp-notice .dashicons {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+    flex-shrink: 0;
+}
+
+.mrp-notice strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.mrp-notice p {
+    margin: 0;
+}
+
+.mrp-notice a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.mrp-notice-warning {
+    background: linear-gradient(135deg, #fef7f7 0%, #fcf0f1 100%);
+    border-left: 4px solid #d63638;
+    color: #8b3434;
+    box-shadow: 0 1px 3px rgba(214,54,56,.08);
+}
+
+.mrp-notice-success {
+    background: linear-gradient(135deg, #f3fcf5 0%, #edfaef 100%);
+    border-left: 4px solid #00a32a;
+    color: #1e5e1e;
+    box-shadow: 0 1px 3px rgba(0,163,42,.08);
+}
+
+/* ─── Grid ──────────────────────────────── */
+
+.mrp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.mrp-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 782px) {
+    .mrp-grid,
+    .mrp-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ─── Card ──────────────────────────────── */
+
+.mrp-card {
+    background: #fff;
+    border: 1px solid #e2e4e7;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.02);
+    overflow: hidden;
+    transition: box-shadow .2s ease, transform .2s ease;
+}
+
+.mrp-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.03);
+}
+
+.mrp-card-wide {
+    grid-column: 1 / -1;
+}
+
+.mrp-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f0f0f1;
+    background: linear-gradient(135deg, #f9fafb 0%, #f6f7f9 100%);
+}
+
+.mrp-card-header .dashicons {
+    background: linear-gradient(135deg, #6379c3, #4254ba);
+    color: #fff;
+    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.mrp-card-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.mrp-card-body {
+    padding: 18px;
+}
+
+.mrp-card-body p {
+    margin: 8px 0 0;
+    color: #646970;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.mrp-card-footer {
+    padding: 12px 18px;
+    border-top: 1px solid #f0f0f1;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ─── Status Badge ──────────────────────── */
+
+.mrp-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mrp-status::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.mrp-active {
+    background: #edfaef;
+    color: #00a32a;
+}
+
+.mrp-active::before {
+    background: #00a32a;
+    box-shadow: 0 0 0 3px rgba(0,163,42,.15);
+    animation: mrp-pulse-green 2s ease-in-out infinite;
+}
+
+.mrp-inactive {
+    background: #fcf0f1;
+    color: #d63638;
+}
+
+.mrp-inactive::before {
+    background: #d63638;
+    box-shadow: 0 0 0 3px rgba(214,54,56,.12);
+}
+
+@keyframes mrp-pulse-green {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(0,163,42,.15); }
+    50%      { box-shadow: 0 0 0 6px rgba(0,163,42,.06); }
+}
+
+/* ─── Toggle Switch ─────────────────────── */
+
+.mrp-toggle {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    cursor: pointer;
+}
+
+.mrp-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.mrp-slider {
+    position: absolute;
+    inset: 0;
+    background: #d1d5db;
+    border-radius: 26px;
+    transition: background .25s ease, box-shadow .25s ease;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.1);
+}
+
+.mrp-slider::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .25s cubic-bezier(.4,.0,.2,1);
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+
+.mrp-toggle input:checked + .mrp-slider {
+    background: linear-gradient(135deg, #00a32a, #008a22);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.1), 0 0 0 3px rgba(0,163,42,.12);
+}
+
+.mrp-toggle input:checked + .mrp-slider::before {
+    transform: translateX(20px);
+}
+
+.mrp-toggle input:focus + .mrp-slider {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.1), 0 0 0 3px rgba(99,121,195,.25);
+}
+
+.mrp-toggle input:checked:focus + .mrp-slider {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.1), 0 0 0 3px rgba(0,163,42,.25);
+}
+
+/* ─── Purge Actions ─────────────────────── */
+
+.mrp-purge-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.mrp-purge-url {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.mrp-purge-url input[type="url"] {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* ─── Buttons ───────────────────────────── */
+
+.mrp-card .button {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all .2s ease;
+}
+
+.mrp-card .button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+
+.mrp-card .button:active {
+    transform: translateY(0);
+}
+
+.mrp-card .button-primary {
+    background: linear-gradient(135deg, #6379c3, #4254ba);
+    border-color: #4254ba;
+    color: #fff;
+}
+
+.mrp-card .button-primary:hover {
+    background: linear-gradient(135deg, #5668b2, #3748a8);
+    border-color: #3748a8;
+}
+
+/* ─── Connection Result ─────────────────── */
+
+#mrp-connection-result {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    animation: mrp-fade-in .3s ease;
+}
+
+.mrp-success {
+    background: linear-gradient(135deg, #f3fcf5, #edfaef);
+    border: 1px solid rgba(0,163,42,.25);
+    color: #1e5e1e;
+}
+
+.mrp-error {
+    background: linear-gradient(135deg, #fef7f7, #fcf0f1);
+    border: 1px solid rgba(214,54,56,.25);
+    color: #8b3434;
+}
+
+@keyframes mrp-fade-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Form ──────────────────────────────── */
+
+.mrp-card .form-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.mrp-card .form-table th {
+    width: 220px;
+    padding: 16px 14px 16px 0;
+    font-weight: 500;
+    font-size: 13px;
+    color: #3c434a;
+    vertical-align: top;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.mrp-card .form-table td {
+    padding: 14px 0;
+    vertical-align: top;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.mrp-card .form-table tr:last-child th,
+.mrp-card .form-table tr:last-child td {
+    border-bottom: none;
+}
+
+.mrp-card .form-table input[type="number"],
+.mrp-card .form-table input[type="text"],
+.mrp-card .form-table input[type="url"],
+.mrp-card .form-table select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    transition: border-color .2s, box-shadow .2s;
+    background: #fff;
+}
+
+.mrp-card .form-table input:focus,
+.mrp-card .form-table select:focus {
+    border-color: #6379c3;
+    box-shadow: 0 0 0 3px rgba(99,121,195,.12);
+    outline: none;
+}
+
+.mrp-card .form-table .description {
+    color: #8c8f94;
+    font-size: 12px;
+    margin-top: 6px;
+    line-height: 1.5;
+}
+
+.mrp-card .form-table .small-text {
+    width: 100px;
+}
+
+.mrp-card-body h2 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1d2327;
+    margin: 28px 0 4px;
+    padding-top: 20px;
+    border-top: 1px solid #f0f0f1;
+}
+
+.mrp-card-body h2:first-of-type {
+    margin-top: 0;
+    border-top: none;
+    padding-top: 0;
+}
+
+/* ─── Form Actions (submit buttons) ─────── */
+
+.mrp-form-actions {
+    padding-top: 20px;
+    border-top: 1px solid #f0f0f1;
+    margin-top: 8px;
+}
+
+.mrp-form-actions .button {
+    margin-right: 8px;
+}
+
+/* ─── Loading Spinner ───────────────────── */
+
+.mrp-loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2.5px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: mrp-spin .6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.mrp-btn-purge:disabled .mrp-loading {
+    border-color: rgba(255,255,255,.3);
+    border-top-color: #fff;
+}
+
+.button-secondary .mrp-loading,
+.mrp-card .button-secondary:disabled .mrp-loading {
+    border-color: rgba(0,0,0,.15);
+    border-top-color: #3c434a;
+}
+
+@keyframes mrp-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ─── Card icon accent bar ──────────────── */
+
+.mrp-card::before {
+    content: '';
+    display: block;
+    height: 3px;
+    background: linear-gradient(90deg, #6379c3, #4254ba);
+    opacity: 0;
+    transition: opacity .2s ease;
+}
+
+.mrp-card:hover::before {
+    opacity: 1;
+}
+
+/* ─── Dashboard stat highlight ──────────── */
+
+.mrp-card-body .mrp-status + p {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #8c8f94;
+}
+
+/* ─── Settings page ─────────────────────── */
+
+#mrp-settings-form .form-table th {
+    font-weight: 600;
+}
+
+/* ─── Toast / notification bar ──────────── */
+
+.mrp-toast {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    background: #1d2327;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    z-index: 999999;
+    animation: mrp-toast-in .3s ease, mrp-toast-out .3s ease 2.7s forwards;
+}
+
+.mrp-toast-success {
+    background: linear-gradient(135deg, #00a32a, #008a22);
+}
+
+.mrp-toast-error {
+    background: linear-gradient(135deg, #d63638, #b32d2e);
+}
+
+@keyframes mrp-toast-in {
+    from { opacity: 0; transform: translateY(10px) scale(.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes mrp-toast-out {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(10px) scale(.96); }
+}
+
+/* ─── Empty state ───────────────────────── */
+
+.mrp-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #8c8f94;
+}
+
+.mrp-empty .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #d1d5db;
+    margin-bottom: 12px;
+}
+
+.mrp-empty h3 {
+    font-size: 16px;
+    color: #3c434a;
+    margin: 0 0 6px;
+}
+
+.mrp-empty p {
+    margin: 0;
+    font-size: 13px;
+}
+
+/* ─── Responsive tweaks ─────────────────── */
+
+@media (max-width: 782px) {
+    .mrp-header h1 {
+        font-size: 22px;
+    }
+
+    .mrp-card .form-table th {
+        width: auto;
+        display: block;
+        padding-bottom: 4px;
+    }
+
+    .mrp-card .form-table td {
+        padding-top: 4px;
+    }
+
+    .mrp-purge-actions {
+        flex-direction: column;
+    }
+
+    .mrp-purge-url {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

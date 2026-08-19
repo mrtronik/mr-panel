@@ -1,0 +1,293 @@
+<style>
+  .mail-list li { border-bottom: 1px solid var(--border-soft); position: relative; }
+  .mail-list li:last-child { border-bottom: none; }
+  .mail-list li .mail-item { border-bottom: none; }
+  .mail-list li.unread-li { border-bottom-color: var(--primary); border-bottom-width: 2px; }
+  .mi-check { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 2; }
+  .mi-check input { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+  .mail-item { padding-left: 38px !important; }
+  .mail-item .mi-avatar { margin-left: 4px; }
+  .mail-bulk-bar { display: none; align-items: center; gap: 8px; padding: 8px 16px; background: var(--primary-soft); border-bottom: 1px solid var(--border-soft); font-size: 0.82rem; color: var(--text-main); }
+  .mail-bulk-bar.visible { display: flex; }
+  .mail-bulk-bar .bulk-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); cursor: pointer; font-size: 0.78rem; font-weight: 500; transition: all 0.15s; }
+  .mail-bulk-bar .bulk-btn:hover { background: var(--bg-hover); border-color: var(--primary); color: var(--primary); }
+  .mail-bulk-bar .bulk-btn.danger:hover { color: #ef4444; border-color: #ef4444; background: rgba(239,68,68,0.08); }
+  .thread-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; border-radius: 10px; background: var(--border-soft); color: var(--text-muted); font-size: 0.7rem; font-weight: 600; margin-left: 6px; padding: 0 5px; }
+  .thread-count.has-unread { background: var(--primary); color: #fff; }
+</style>
+
+<div class="page-content">
+  <div class="breadcrumb-bar">
+    <a href="/dashboard">Home</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <a href="/webmail">Email</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <span>Webmail Inbox</span>
+  </div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div>
+      <h1>Webmail Inbox</h1>
+      <p class="subtitle"><%= currentUser %> — <span id="unreadCount"><%= unreadCount %></span> unread conversations</p>
+    </div>
+  </div>
+  <div class="mail-layout" data-skeleton-target data-skeleton-type="table" data-skeleton-count="8">
+    <div class="mail-side">
+      <a class="mail-compose-btn" href="/webmail/compose">
+        <i class="fa-solid fa-pen-to-square"></i> Compose
+      </a>
+      <a class="mail-folder active" href="/webmail">
+        <i class="fa-solid fa-inbox"></i> Inbox <span class="mf-count" id="inboxCount"><%= unreadCount %></span>
+      </a>
+      <a class="mail-folder" href="/webmail?folder=starred">
+        <i class="fa-solid fa-star"></i> Starred <span class="mf-count">0</span>
+      </a>
+      <a class="mail-folder" href="/webmail?folder=sent">
+        <i class="fa-solid fa-paper-plane"></i> Sent
+      </a>
+      <a class="mail-folder" href="/webmail?folder=spam">
+        <i class="fa-solid fa-circle-exclamation"></i> Spam
+      </a>
+      <a class="mail-folder" href="/webmail?folder=trash">
+        <i class="fa-solid fa-trash"></i> Trash
+      </a>
+      <div class="mail-side-divider"></div>
+      <a class="mail-folder" href="/webmail/settings">
+        <i class="fa-solid fa-gear"></i> Settings
+      </a>
+      <div class="mail-side-label">Labels</div>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#ef4444"></span> Clients
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#10b981"></span> Server Alerts
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#f59e0b"></span> Billing
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#8b5cf6"></span> Personal
+      </a>
+    </div>
+    <div class="mail-main">
+      <div class="mail-toolbar">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-right:8px">
+          <input type="checkbox" id="selectAllCb" onchange="toggleSelectAll()" style="width:16px;height:16px;accent-color:var(--primary)" />
+        </label>
+        <div class="mt-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input placeholder="Search mail..." id="searchMail" onkeyup="filterMail()" />
+        </div>
+        <button class="mail-tool-btn" title="Refresh" onclick="location.reload()">
+          <i class="fa-solid fa-rotate"></i>
+        </button>
+        <button class="mail-tool-btn" title="Mark all read" onclick="markAllRead()">
+          <i class="fa-solid fa-envelope-open"></i>
+        </button>
+      </div>
+      <div class="mail-bulk-bar" id="bulkBar">
+        <span id="selectedCount" style="font-weight:600">0 selected</span>
+        <button class="bulk-btn danger" onclick="deleteSelected()">
+          <i class="fa-solid fa-trash"></i> Delete
+        </button>
+        <button class="bulk-btn" onclick="markSelectedRead()">
+          <i class="fa-solid fa-envelope-open"></i> Mark Read
+        </button>
+      </div>
+      <div id="mailListWrap">
+        <% if (threads && threads.length > 0) { %>
+          <ul class="mail-list" id="mailList">
+            <% threads.forEach(function(thread) { 
+              var fromName = thread.lastFrom || 'Unknown';
+              var initials = fromName.split(' ').map(function(w){ return w.charAt(0); }).join('').substring(0,2).toUpperCase();
+              var colors = ['av-blue','av-red','av-green','av-purple','av-orange','av-teal','av-pink','av-gray'];
+              var colorIdx = Math.abs(fromName.charCodeAt(0) + (fromName.charCodeAt(1) || 0)) % colors.length;
+              var dateStr = new Date(thread.lastDate).toLocaleString('id-ID', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+              var preview = thread.preview || '';
+              var emailsJson = encodeURIComponent(JSON.stringify(thread.emails.map(function(e) { return { uid: e.uid, date: e.date }; })));
+            %>
+              <li class="<%= !thread.seen ? 'unread-li' : '' %>">
+                <div class="mi-check">
+                  <input type="checkbox" class="mail-cb" data-uid="<%= thread.emails[thread.emails.length-1].uid %>" data-thread="<%= thread.threadId %>" onchange="onMailCheck()" />
+                </div>
+                <a class="mail-item <%= !thread.seen ? 'unread' : '' %>" href="/webmail/thread/<%= thread.threadId %>?emails=<%= emailsJson %>" data-uid="<%= thread.emails[thread.emails.length-1].uid %>" data-from="<%= fromName.toLowerCase() %>" data-subject="<%= (thread.subject || '').toLowerCase() %>">
+                  <span class="mi-avatar <%= colors[colorIdx] %>"><%= initials %></span>
+                  <div class="mi-body">
+                    <div class="mi-top">
+                      <span class="mi-from"><%= fromName %>
+                        <% if (thread.count > 1) { %>
+                          <span class="thread-count <%= thread.hasUnread ? 'has-unread' : '' %>"><%= thread.count %></span>
+                        <% } %>
+                      </span>
+                      <span class="mi-date"><%= dateStr %></span>
+                    </div>
+                    <div class="mi-subject"><%= thread.subject || '(No Subject)' %></div>
+                    <div class="mi-preview"><%= preview %></div>
+                  </div>
+                  <% if (!thread.seen) { %>
+                    <i class="fa-solid fa-circle mi-unread-dot" style="color:var(--primary);font-size:8px"></i>
+                  <% } %>
+                </a>
+              </li>
+            <% }); %>
+          </ul>
+        <% } else { %>
+          <div class="webmail-empty" style="display:flex;align-items:center;justify-content:center;height:400px;color:var(--text-muted)">
+            <div class="text-center">
+              <i class="fa-solid fa-inbox" style="font-size:3rem;margin-bottom:12px;display:block"></i>
+              <p style="font-size:1rem">Your inbox is empty</p>
+              <a href="/webmail/compose" class="btn-primary-soft" style="margin-top:12px;display:inline-flex">
+                <i class="fa-solid fa-pen-to-square"></i> Compose Email
+              </a>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+var socket = io();
+
+socket.on('new-email', function(data) {
+  var exists = document.querySelector('[data-uid="' + data.uid + '"]');
+  if (!exists) {
+    var li = document.createElement('li');
+    li.className = 'unread-li';
+    var fromName = data.name || data.from || 'Unknown';
+    var initials = fromName.split(' ').map(function(w){ return w.charAt(0); }).join('').substring(0,2).toUpperCase();
+    var colors = ['av-blue','av-red','av-green','av-purple','av-orange','av-teal','av-pink','av-gray'];
+    var colorIdx = Math.abs(fromName.charCodeAt(0) + (fromName.charCodeAt(1) || 0)) % colors.length;
+    li.innerHTML = '<div class="mi-check"><input type="checkbox" class="mail-cb" data-uid="' + data.uid + '" onchange="onMailCheck()" /></div>' +
+      '<a class="mail-item unread" href="/webmail/read/' + data.uid + '" data-uid="' + data.uid + '">' +
+      '<span class="mi-avatar ' + colors[colorIdx] + '">' + initials + '</span>' +
+      '<div class="mi-body"><div class="mi-top"><span class="mi-from">' + fromName + '</span>' +
+      '<span class="mi-date">' + data.date + '</span></div>' +
+      '<div class="mi-subject">' + (data.subject || '(No Subject)') + '</div>' +
+      '<div class="mi-preview">' + (data.preview || '') + '</div></div>' +
+      '<i class="fa-solid fa-circle mi-unread-dot" style="color:var(--primary);font-size:8px"></i></a>';
+    var list = document.getElementById('mailList');
+    if (list) {
+      list.insertBefore(li, list.firstChild);
+    } else {
+      var wrap = document.getElementById('mailListWrap');
+      wrap.innerHTML = '<ul class="mail-list" id="mailList"></ul>';
+      document.getElementById('mailList').appendChild(li);
+    }
+    var count = document.getElementById('inboxCount');
+    if (count) count.textContent = parseInt(count.textContent) + 1;
+    var unread = document.getElementById('unreadCount');
+    if (unread) unread.textContent = parseInt(unread.textContent) + 1;
+  }
+});
+
+function filterMail() {
+  var q = document.getElementById('searchMail').value.toLowerCase();
+  document.querySelectorAll('.mail-item').forEach(function(el) {
+    var from = el.getAttribute('data-from') || '';
+    var subject = el.getAttribute('data-subject') || '';
+    el.parentElement.style.display = (from.includes(q) || subject.includes(q)) ? '' : 'none';
+  });
+}
+
+function markAllRead() {
+  document.querySelectorAll('.mail-item.unread').forEach(function(el) {
+    el.classList.remove('unread');
+    var dot = el.querySelector('.mi-unread-dot');
+    if (dot) dot.remove();
+  });
+  document.querySelectorAll('li.unread-li').forEach(function(el) { el.classList.remove('unread-li'); });
+  var unread = document.getElementById('unreadCount');
+  if (unread) unread.textContent = '0';
+  var inboxCount = document.getElementById('inboxCount');
+  if (inboxCount) inboxCount.textContent = '0';
+}
+
+/* ===== Checkbox / Bulk ===== */
+function toggleSelectAll() {
+  var checked = document.getElementById('selectAllCb').checked;
+  document.querySelectorAll('.mail-cb').forEach(function(cb) { cb.checked = checked; });
+  onMailCheck();
+}
+
+function onMailCheck() {
+  var checked = document.querySelectorAll('.mail-cb:checked');
+  var bar = document.getElementById('bulkBar');
+  var cnt = document.getElementById('selectedCount');
+  if (checked.length > 0) {
+    bar.classList.add('visible');
+    cnt.textContent = checked.length + ' selected';
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+function getSelectedUids() {
+  var uids = [];
+  document.querySelectorAll('.mail-cb:checked').forEach(function(cb) { uids.push(cb.dataset.uid); });
+  return uids;
+}
+
+function deleteSelected() {
+  var uids = getSelectedUids();
+  if (uids.length === 0) return;
+  whpConfirm('Delete ' + uids.length + ' email(s)?', 'This cannot be undone.', function() {
+    fetch('/api/mail/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uids: uids })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.success) {
+        uids.forEach(function(uid) {
+          var li = document.querySelector('.mail-cb[data-uid="' + uid + '"]');
+          if (li) li.closest('li').remove();
+        });
+        whpToast('Deleted', uids.length + ' email(s) deleted.', 'success');
+        onMailCheck();
+        document.getElementById('selectAllCb').checked = false;
+        if (document.querySelectorAll('.mail-item').length === 0) {
+          document.getElementById('mailListWrap').innerHTML = '<div class="webmail-empty" style="display:flex;align-items:center;justify-content:center;height:400px;color:var(--text-muted)"><div class="text-center"><i class="fa-solid fa-inbox" style="font-size:3rem;margin-bottom:12px;display:block"></i><p style="font-size:1rem">Your inbox is empty</p><a href="/webmail/compose" class="btn-primary-soft" style="margin-top:12px;display:inline-flex"><i class="fa-solid fa-pen-to-square"></i> Compose Email</a></div></div>';
+        }
+      } else {
+        whpToast('Error', res.error || 'Failed to delete', 'error');
+      }
+    })
+    .catch(function() { whpToast('Error', 'Connection failed', 'error'); });
+  });
+}
+
+function markSelectedRead() {
+  var uids = getSelectedUids();
+  if (uids.length === 0) return;
+  var done = 0;
+  uids.forEach(function(uid) {
+    fetch('/api/mail/seen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: uid, seen: true }) })
+    .then(function() {
+      var li = document.querySelector('.mail-cb[data-uid="' + uid + '"]');
+      if (li) {
+        var parent = li.closest('li');
+        parent.classList.remove('unread-li');
+        var item = parent.querySelector('.mail-item');
+        if (item) item.classList.remove('unread');
+        var dot = parent.querySelector('.mi-unread-dot');
+        if (dot) dot.remove();
+      }
+      done++;
+      if (done === uids.length) {
+        whpToast('Marked', uids.length + ' email(s) marked as read.', 'success');
+        updateUnreadCount();
+        onMailCheck();
+      }
+    });
+  });
+}
+
+function updateUnreadCount() {
+  var total = document.querySelectorAll('.mail-item.unread').length;
+  document.getElementById('unreadCount').textContent = total;
+  document.getElementById('inboxCount').textContent = total;
+}
+</script>

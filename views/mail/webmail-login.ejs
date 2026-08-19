@@ -1,0 +1,37 @@
+<style>
+.webmail-login { max-width: 420px; margin: 60px auto; }
+.webmail-login .card { border: none; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+.webmail-login .card-body { padding: 40px; }
+.webmail-login h4 { text-align: center; margin-bottom: 8px; }
+.webmail-login .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 0.9rem; }
+</style>
+
+<section class="about__area section-space-top section-space-bottom-1">
+<div class="container">
+    <div class="webmail-login">
+        <div class="card">
+            <div class="card-body">
+                <h4><i class="ri-mail-line"></i> Webmail Login</h4>
+                <p class="subtitle">Sign in with your email account</p>
+
+                <% if (typeof error !== 'undefined' && error) { %>
+                    <div class="alert alert-danger"><%= error %></div>
+                <% } %>
+
+                <form method="POST" action="/webmail/auth">
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" name="email" placeholder="user@domain.com" required
+                            value="<%= typeof email !== 'undefined' ? email : '' %>">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" placeholder="Your password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2"><i class="ri-login-box-line"></i> Sign In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</section>

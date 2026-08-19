@@ -1,0 +1,191 @@
+﻿<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper">
+    <div class="pma-sidebar">
+      <div class="pma-sidebar-header">
+        <a href="/dns" class="pma-breadcrumb"><i class="fa-solid fa-arrow-left"></i> DNS</a>
+      </div>
+      <div class="pma-tree">
+        <div class="pma-tree-item active">
+          <i class="fa-solid fa-earth-americas tree-icon-sm"></i>
+          <span><%= zone.name %></span>
+        </div>
+      </div>
+    </div>
+    <div class="pma-main">
+      <div class="pma-nav">
+        <span class="pma-nav-title">
+          <a href="/dns" class="pma-breadcrumb"><%= zone.name %></a>
+          <span class="badge bg-info" style="margin-left:8px"><%= zone.mode %></span>
+        </span>
+        <button class="btn btn-sm btn-primary" onclick="showAddRecordModal()"><i class="fa-solid fa-plus"></i> Add Record</button>
+        <button class="btn btn-sm btn-outline" onclick="resyncZone()" title="Re-sync to PowerDNS"><i class="fa-solid fa-rotate"></i> Re-sync</button>
+      </div>
+      <div class="pma-content">
+        <div class="pma-info-bar">
+          <span><b>Domain:</b> <%= zone.name %></span>
+          <span><b>Records:</b> <%= records.length %></span>
+          <span><b>Mode:</b> <%= zone.mode %></span>
+        </div>
+        <div class="pma-box">
+          <table class="pma-table" id="recordsTable">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th>Name</th>
+                <th style="width:80px">Type</th>
+                <th>Content</th>
+                <th style="width:80px">TTL</th>
+                <th style="width:80px">Prio</th>
+                <th style="width:100px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (records.length === 0) { %>
+              <tr><td colspan="7" class="text-center text-muted p-4">No records</td></tr>
+              <% } else { %>
+              <% records.forEach(function(r, i) { %>
+              <tr data-type="<%= r.type %>">
+                <td><%= i + 1 %></td>
+                <td class="pma-cell"><%= r.name %></td>
+                <td><span class="badge bg-info"><%= r.type %></span></td>
+                <td class="pma-cell" title="<%= r.content %>"><%= r.content %></td>
+                <td><%= r.ttl %></td>
+                <td><%= r.prio || '-' %></td>
+                <td class="pma-actions">
+                  <button class="btn btn-xs btn-outline" title="Edit" onclick="editRecord(<%= JSON.stringify(r) %>)"><i class="fa-solid fa-pen"></i></button>
+                  <button class="btn btn-xs btn-outline btn-danger" title="Delete" onclick="deleteRecord(<%= r.id %>)"><i class="fa-solid fa-trash"></i></button>
+                </td>
+              </tr>
+              <% }); %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal fade" id="recordModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="recordModalTitle"><i class="fa-solid fa-plus"></i> Add Record</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editRecordId">
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label">Type</label>
+            <select class="form-select" id="recType">
+              <% recordTypes.forEach(function(t) { %>
+              <option value="<%= t %>"><%= t %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" id="recName" placeholder="@ or subdomain">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">TTL</label>
+            <select class="form-select" id="recTtl">
+              <% ttlOptions.forEach(function(t) { %>
+              <option value="<%= t.v %>" <%= t.v === 3600 ? 'selected' : '' %>><%= t.l %></option>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+        <div class="row g-2 mt-1">
+          <div class="col-md-8">
+            <label class="form-label">Content</label>
+            <input type="text" class="form-control" id="recContent" placeholder="IP or value">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Priority</label>
+            <input type="number" class="form-control" id="recPrio" placeholder="10">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" id="btnSaveRecord" onclick="saveRecord()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var ZONE_ID = <%= zone.id %>;
+var ZONE_NAME = '<%= zone.name %>';
+
+function showAddRecordModal() {
+    document.getElementById('editRecordId').value = '';
+    document.getElementById('recType').value = 'A';
+    document.getElementById('recName').value = '@';
+    document.getElementById('recContent').value = '';
+    document.getElementById('recTtl').value = '3600';
+    document.getElementById('recPrio').value = '';
+    document.getElementById('recordModalTitle').innerHTML = '<i class="fa-solid fa-plus"></i> Add Record';
+    document.getElementById('btnSaveRecord').textContent = 'Add';
+    new bootstrap.Modal(document.getElementById('recordModal')).show();
+}
+
+function editRecord(r) {
+    document.getElementById('editRecordId').value = r.id;
+    document.getElementById('recType').value = r.type;
+    var shortName = r.name === ZONE_NAME ? '@' : r.name.replace('.' + ZONE_NAME, '');
+    document.getElementById('recName').value = shortName;
+    document.getElementById('recContent').value = r.content;
+    document.getElementById('recTtl').value = r.ttl;
+    document.getElementById('recPrio').value = r.prio || '';
+    document.getElementById('recordModalTitle').innerHTML = '<i class="fa-solid fa-pen"></i> Edit Record';
+    document.getElementById('btnSaveRecord').textContent = 'Save';
+    new bootstrap.Modal(document.getElementById('recordModal')).show();
+}
+
+function saveRecord() {
+    var id = document.getElementById('editRecordId').value;
+    var data = {
+        zone_id: ZONE_ID,
+        type: document.getElementById('recType').value,
+        name: document.getElementById('recName').value.trim() || '@',
+        content: document.getElementById('recContent').value.trim(),
+        ttl: document.getElementById('recTtl').value,
+        prio: document.getElementById('recPrio').value || null
+    };
+    if (!data.content) return whpToast('Warning', 'Content required', 'warning');
+
+    var url = id ? '/dns/record/' + id : '/dns/record';
+    var method = id ? 'POST' : 'POST';
+    if (id) data._method = 'PUT';
+
+    fetch(url, { method: method, headers: {'Content-Type':'application/json'}, credentials: 'include', body: JSON.stringify(data) })
+    .then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast(id ? 'Updated' : 'Added','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+
+function deleteRecord(id) {
+    whpConfirm('Delete?', 'Remove this record?', function() {
+        fetch('/dns/record/' + id, { method: 'DELETE', credentials: 'include' })
+        .then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Deleted','','success');setTimeout(function(){location.reload()},500)}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+
+function resyncZone() {
+    whpConfirm('Re-sync?', 'Re-send all records to PowerDNS?', function() {
+        fetch('/dns/<%= zone.id %>/resync', { method: 'POST', credentials: 'include' })
+        .then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Re-synced','','success')}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+</script>

@@ -1,0 +1,575 @@
+             <section class="breadcrumb__before p-relative">
+                <div class="breadcrumb__area overflow-hidden position-relative" data-background="assets/imgs/shapes/breadcrumb-shape.png">
+                    <div class="breadcrumb__shapes">
+                        <div class="breadcrumb__shapes-shape-1"></div>
+                        <div class="breadcrumb__shapes-shape-2"></div>
+                        <div class="breadcrumb__shapes-shape-3"></div>
+                        <div class="breadcrumb__shapes-shape-4"></div>
+                        <div class="breadcrumb__shapes-shape-5 upDown">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-1.png" alt="img not found">
+                        </div>
+                        <div class="breadcrumb__shapes-shape-6 line-to-bottom-360">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-2.png" alt="img not found">
+                        </div>
+                        <div class="breadcrumb__shapes-shape-7 line-to-bottom-360-l">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-3.png" alt="img not found">
+                        </div>
+                        <div class="breadcrumb__shapes-shape-8 leftRight">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-4.png" alt="img not found">
+                        </div>
+                        <div class="breadcrumb__shapes-shape-9">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-5.png" alt="img not found">
+                        </div>
+                    </div>
+                    <div class="container">
+                        <div class="row align-items-center justify-content-between">
+                            <div class="col-12">
+                                <div class="breadcrumb__content">
+                                    <div class="breadcrumb__title-wrapper">
+                                        <h1 class="breadcrumb__title"><%= title %></h1>
+                                    </div>
+                                    <div class="breadcrumb__menu">
+                                        <nav>
+                                            <ul>
+                                                <li><span><a href="/dashboard"> <img src="assets/imgs/icon/home-icon.png" alt="img not found">Home</a></span></li>
+                                                <li class="active"><span> <%= title %></span></li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+             </section>
+<section class="about__area section-space-top section-space-bottom-1">
+                <div class="container">
+
+<% if (!status.connected) { %>
+<div class="alert alert-danger">
+    <i class="ri-error-warning-line"></i> <strong>Redis tidak terhubung!</strong> <%= status.error %>
+    <hr>
+    <p class="mb-0">Pastikan Redis server sudah terinstall dan berjalan:</p>
+    <code>sudo apt install redis-server && sudo systemctl enable --now redis-server</code>
+</div>
+<% } else { %>
+
+<!-- Status Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="ri-server-line" style="font-size: 2rem;"></i>
+                <h5 class="mt-2 mb-0">Connected</h5>
+                <small>v<%= status.version %></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="ri-timer-line" style="font-size: 2rem;"></i>
+                <h5 class="mt-2 mb-0"><%= status.uptimeFormatted %></h5>
+                <small>Uptime</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="ri-database-2-line" style="font-size: 2rem;"></i>
+                <h5 class="mt-2 mb-0"><%= status.totalKeys.toLocaleString() %></h5>
+                <small>Total Keys</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <i class="ri-speed-line" style="font-size: 2rem;"></i>
+                <h5 class="mt-2 mb-0"><%= status.stats.opsPerSec.toLocaleString() %></h5>
+                <small>Ops/sec</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Memory Info -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><strong><i class="ri-cpu-line"></i> Memory Usage</strong></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td>Used Memory</td><td><strong><%= status.memory.used %></strong></td></tr>
+                    <tr><td>Peak Memory</td><td><%= status.memory.peak %></td></tr>
+                    <tr><td>RSS</td><td><%= status.memory.rss %></td></tr>
+                    <tr><td>Fragmentation Ratio</td><td><span class="badge bg-<%= parseFloat(status.memory.fragmentation) > 1.5 ? 'danger' : 'success' %>"><%= status.memory.fragmentation %></span></td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clients Info -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><strong><i class="ri-user-line"></i> Client Connections</strong></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td>Connected Clients</td><td><strong><%= status.clients.connected %></strong></td></tr>
+                    <tr><td>Blocked Clients</td><td><%= status.clients.blocked %></td></tr>
+                    <tr><td>Tracking Clients</td><td><%= status.clients.tracking %></td></tr>
+                    <tr><td>Max Clients</td><td><%= status.clients.maxClients %></td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Stats -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><strong><i class="ri-bar-chart-line"></i> Statistics</strong></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr><td>Total Commands</td><td><strong><%= status.stats.totalCommands.toLocaleString() %></strong></td></tr>
+                    <tr><td>Hit Rate</td><td><span class="badge bg-<%= parseFloat(status.stats.hitRate) > 80 ? 'success' : 'warning' %>"><%= status.stats.hitRate %></span></td></tr>
+                    <tr><td>Keyspace Hits</td><td><%= status.stats.keyspaceHits.toLocaleString() %></td></tr>
+                    <tr><td>Keyspace Misses</td><td><%= status.stats.keyspaceMisses.toLocaleString() %></td></tr>
+                    <tr><td>Expired Keys</td><td><%= status.stats.expiredKeys.toLocaleString() %></td></tr>
+                    <tr><td>Evicted Keys</td><td><%= status.stats.evictedKeys.toLocaleString() %></td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Databases -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header"><strong><i class="ri-folder-line"></i> Databases</strong></div>
+            <div class="card-body">
+                <div id="dbList">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Browser -->
+<div class="card mb-4">
+    <div class="card-header">
+        <strong><i class="ri-key-line"></i> Key Browser</strong>
+        <div class="float-end">
+            <div class="input-group input-group-sm" style="width: 300px;">
+                <input type="text" class="form-control" id="keyPattern" placeholder="Pattern (e.g., user:*)" value="*">
+                <button class="btn btn-primary" onclick="searchKeys()"><i class="ri-search-line"></i></button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm" id="keysTable">
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Type</th>
+                        <th>TTL</th>
+                        <th>Size</th>
+                        <th width="100">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="keysBody">
+                    <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="text-center mt-3">
+            <button class="btn btn-sm btn-outline-secondary" id="loadMoreBtn" onclick="loadMoreKeys()" style="display:none;">Load More</button>
+        </div>
+    </div>
+</div>
+
+<!-- Key Detail Modal -->
+<div class="modal fade" id="keyDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="ri-key-line"></i> Key Detail</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="keyDetailContent">Loading...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="card mb-4">
+    <div class="card-header"><strong><i class="ri-tools-line"></i> Actions</strong></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6>Delete by Pattern</h6>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="text" class="form-control" id="deletePattern" placeholder="Pattern (e.g., cache:*)">
+                    <button class="btn btn-danger" onclick="deleteByPattern()"><i class="ri-delete-bin-line"></i> Delete</button>
+                </div>
+                <small class="text-muted">Hapus semua key yang match pattern</small>
+            </div>
+            <div class="col-md-4">
+                <h6>Flush Database</h6>
+                <div class="input-group input-group-sm mb-2">
+                    <select class="form-select" id="flushDb">
+                        <option value="0">DB 0</option>
+                        <option value="1">DB 1</option>
+                        <option value="2">DB 2</option>
+                        <option value="3">DB 3</option>
+                        <option value="4">DB 4</option>
+                        <option value="5">DB 5</option>
+                    </select>
+                    <button class="btn btn-warning" onclick="flushDb()"><i class="ri-delete-bin-2-line"></i> Flush</button>
+                </div>
+                <small class="text-muted">Hapus semua key di database tertentu</small>
+            </div>
+            <div class="col-md-4">
+                <h6>Flush All</h6>
+                <button class="btn btn-danger" onclick="flushAll()"><i class="ri-delete-bin-3-line"></i> Flush All Databases</button>
+                <br><small class="text-danger">Hapus SEMUA data di semua database!</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slow Log -->
+<div class="card mb-4">
+    <div class="card-header"><strong><i class="ri-file-list-3-line"></i> Slow Log</strong></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Duration</th>
+                        <th>Command</th>
+                        <th>Client</th>
+                    </tr>
+                </thead>
+                <tbody id="slowLogBody">
+                    <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<% } %>
+
+    </div>
+</section>
+
+<script>
+let currentCursor = 0;
+let allKeys = [];
+
+async function loadKeys(pattern = '*', cursor = 0) {
+    try {
+        const res = await fetch(`/api/redis/keys?pattern=${encodeURIComponent(pattern)}&cursor=${cursor}&count=50`);
+        const data = await res.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('keysBody');
+            if (cursor === 0) {
+                tbody.innerHTML = '';
+                allKeys = [];
+            }
+            
+            data.data.keys.forEach(key => {
+                allKeys.push(key);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><code class="text-primary">${escapeHtml(key.key)}</code></td>
+                    <td><span class="badge bg-secondary">${key.type}</span></td>
+                    <td><small>${key.ttlFormatted}</small></td>
+                    <td>${key.size}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-info" onclick="viewKey('${escapeHtml(key.key)}')"><i class="ri-eye-line"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteKey('${escapeHtml(key.key)}')"><i class="ri-delete-bin-line"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            currentCursor = data.data.cursor;
+            document.getElementById('loadMoreBtn').style.display = data.data.hasMore ? 'inline-block' : 'none';
+            
+            if (allKeys.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada key ditemukan</td></tr>';
+            }
+        }
+    } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+    }
+}
+
+function searchKeys() {
+    const pattern = document.getElementById('keyPattern').value || '*';
+    loadKeys(pattern, 0);
+}
+
+function loadMoreKeys() {
+    const pattern = document.getElementById('keyPattern').value || '*';
+    loadKeys(pattern, currentCursor);
+}
+
+async function viewKey(key) {
+    try {
+        const res = await fetch(`/api/redis/key/${encodeURIComponent(key)}`);
+        const data = await res.json();
+        
+        if (data.success) {
+            const k = data.data;
+            let valueHtml = '';
+            
+            if (k.type === 'string') {
+                valueHtml = `<pre class="bg-light p-3">${escapeHtml(typeof k.value === 'object' ? JSON.stringify(k.value, null, 2) : k.value)}</pre>`;
+            } else if (k.type === 'hash') {
+                valueHtml = '<table class="table table-sm"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>';
+                for (const [field, val] of Object.entries(k.value)) {
+                    valueHtml += `<tr><td><code>${escapeHtml(field)}</code></td><td><code>${escapeHtml(val)}</code></td></tr>`;
+                }
+                valueHtml += '</tbody></table>';
+            } else if (['list', 'set'].includes(k.type)) {
+                valueHtml = '<ul class="list-group">';
+                k.value.forEach(v => {
+                    valueHtml += `<li class="list-group-item"><code>${escapeHtml(v)}</code></li>`;
+                });
+                valueHtml += '</ul>';
+            } else if (k.type === 'zset') {
+                valueHtml = '<table class="table table-sm"><thead><tr><th>Member</th><th>Score</th></tr></thead><tbody>';
+                for (let i = 0; i < k.value.length; i += 2) {
+                    valueHtml += `<tr><td><code>${escapeHtml(k.value[i])}</code></td><td>${k.value[i+1]}</td></tr>`;
+                }
+                valueHtml += '</tbody></table>';
+            }
+            
+            document.getElementById('keyDetailContent').innerHTML = `
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Key:</strong> <code class="text-primary">${escapeHtml(k.key)}</code>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Type:</strong> <span class="badge bg-secondary">${k.type}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>TTL:</strong> ${k.ttlFormatted}
+                    </div>
+                </div>
+                <hr>
+                <h6>Value:</h6>
+                ${valueHtml}
+            `;
+            
+            new bootstrap.Modal(document.getElementById('keyDetailModal')).show();
+        }
+    } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+    }
+}
+
+async function deleteKey(key) {
+    const result = await Swal.fire({
+        title: 'Hapus Key?',
+        text: `Key "${key}" akan dihapus permanen`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Hapus'
+    });
+    
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch(`/api/redis/key/${encodeURIComponent(key)}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire('Berhasil', 'Key berhasil dihapus', 'success');
+                searchKeys();
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        }
+    }
+}
+
+async function deleteByPattern() {
+    const pattern = document.getElementById('deletePattern').value;
+    if (!pattern) {
+        Swal.fire('Error', 'Masukkan pattern', 'error');
+        return;
+    }
+    
+    const result = await Swal.fire({
+        title: 'Hapus by Pattern?',
+        text: `Semua key yang match "${pattern}" akan dihapus`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Hapus'
+    });
+    
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch('/api/redis/delete-pattern', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pattern })
+            });
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire('Berhasil', `${data.count} key berhasil dihapus`, 'success');
+                searchKeys();
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        }
+    }
+}
+
+async function flushDb() {
+    const db = document.getElementById('flushDb').value;
+    const result = await Swal.fire({
+        title: `Flush DB ${db}?`,
+        text: `Semua key di database ${db} akan dihapus permanen`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Flush'
+    });
+    
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch('/api/redis/flush-db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ db: parseInt(db) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire('Berhasil', data.message, 'success');
+                window.location.reload();
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        }
+    }
+}
+
+async function flushAll() {
+    const result = await Swal.fire({
+        title: 'Flush ALL Databases?',
+        text: 'SEMUA data di SEMUA database Redis akan dihapus permanen!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Flush All',
+        html: '<p class="text-danger">Tindakan ini tidak dapat dibatalkan!</p>'
+    });
+    
+    if (result.isConfirmed) {
+        try {
+            const res = await fetch('/api/redis/flush-all', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                Swal.fire('Berhasil', data.message, 'success');
+                window.location.reload();
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        } catch (err) {
+            Swal.fire('Error', err.message, 'error');
+        }
+    }
+}
+
+async function loadDatabases() {
+    try {
+        const res = await fetch('/api/redis/databases');
+        const data = await res.json();
+        
+        if (data.success) {
+            const container = document.getElementById('dbList');
+            container.innerHTML = '';
+            
+            data.data.forEach(db => {
+                const div = document.createElement('div');
+                div.className = 'd-flex justify-content-between align-items-center p-2 border-bottom';
+                div.innerHTML = `
+                    <div>
+                        <strong>DB ${db.id}</strong>
+                        ${db.keys > 0 ? `<span class="badge bg-primary ms-2">${db.keys} keys</span>` : ''}
+                    </div>
+                    <small class="text-muted">${db.expires > 0 ? db.expires + ' expiring' : ''}</small>
+                `;
+                container.appendChild(div);
+            });
+        }
+    } catch (err) {
+        document.getElementById('dbList').innerHTML = '<div class="text-danger">Gagal load databases</div>';
+    }
+}
+
+async function loadSlowLog() {
+    try {
+        const res = await fetch('/api/redis/slow-log?count=10');
+        const data = await res.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('slowLogBody');
+            tbody.innerHTML = '';
+            
+            if (data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Tidak ada slow log</td></tr>';
+                return;
+            }
+            
+            data.data.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><small>${new Date(log.timestamp).toLocaleString()}</small></td>
+                    <td><span class="badge bg-warning">${log.durationMs}</span></td>
+                    <td><code>${escapeHtml(log.command)}</code></td>
+                    <td><small>${log.clientIp}</small></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        document.getElementById('slowLogBody').innerHTML = '<tr><td colspan="4" class="text-danger">Gagal load slow log</td></tr>';
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadKeys();
+    loadDatabases();
+    loadSlowLog();
+    
+    document.getElementById('keyPattern')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchKeys();
+    });
+});
+</script>

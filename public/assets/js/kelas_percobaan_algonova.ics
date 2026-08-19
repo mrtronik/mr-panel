@@ -1,0 +1,13 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Algonova//NONSGML v1.0//EN
+BEGIN:VEVENT
+UID:1786084073971@algonova.lat
+DTSTAMP:20260807T062753Z
+DTSTART:20260810T130000Z
+DTEND:20260810T143000Z
+SUMMARY:Kelas percobaan gratis
+DESCRIPTION:📆 Anda telah berhasil memesan kelas percobaan gratis di sekolah Algonova!\n\n✅ Untuk kelas, Anda akan membutuhkan komputer pribadi atau laptop Windows atau Mac dengan hal-hal berikut:\nMouse dan keyboard\nBrowser web Google Chrome\nAkses email\nMikrofon dan kamera\nZoom\n\n👩👧 Silakan dampingi anak Anda selama kelas percobaan. Tanpa pendampingan orang tua dan komputer mereka, sayangnya kelas tidak dapat dilaksanakan.\n\n❗️Kami merekomendasikan agar Anda memverifikasi bahwa semuanya berfungsi dengan baik setidaknya satu jam sebelum kelas percobaan.
+LOCATION:learn.algonova.id
+END:VEVENT
+END:VCALENDAR

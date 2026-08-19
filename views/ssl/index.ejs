@@ -1,0 +1,178 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>SSL/TLS</span></div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div><h1>SSL/TLS Certificates</h1><p class="subtitle">Manage and monitor your SSL certificates.</p></div>
+    <div class="d-flex gap-2">
+      <button class="btn-ghost" onclick="enableAutoRenew()"><i class="fa-solid fa-rotate"></i> Auto-Renew</button>
+      <button class="btn-ghost" onclick="renewAllCerts()"><i class="fa-solid fa-rotate"></i> Renew All</button>
+      <button class="btn-primary-soft" onclick="showRequestModal()"><i class="fa-solid fa-plus"></i> New Certificate</button>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="stat-card"><span class="stat-icon green"><i class="fa-solid fa-shield-halved"></i></span><div class="stat-info"><p class="stat-label">Active SSL</p><p class="stat-value" id="totalCerts">-</p></div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card"><span class="stat-icon blue"><i class="fa-solid fa-check-circle"></i></span><div class="stat-info"><p class="stat-label">Valid</p><p class="stat-value" id="validCerts">-</p></div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card"><span class="stat-icon amber"><i class="fa-solid fa-clock"></i></span><div class="stat-info"><p class="stat-label">Auto-Renew</p><p class="stat-value" id="autoRenewStatus">-</p></div></div></div>
+  </div>
+
+  <div class="card-soft">
+    <div class="card-head"><h3>Certificates</h3></div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table-soft">
+          <thead><tr><th>Domain</th><th>Domains</th><th>Expiry Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="cert-list">
+            <tr><td colspan="5" class="text-center py-4"><i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;color:var(--primary)"></i><p class="mt-2" style="color:var(--text-muted)">Loading certificates...</p></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal fade" id="requestModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-bottom:1px solid var(--border-soft)"><h5 class="modal-title"><i class="fa-solid fa-shield-halved me-2" style="color:var(--primary)"></i>Request SSL Certificate</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label-soft">Select Website</label><select class="form-soft" id="reqWebsite" onchange="onWebsiteSelect()"><option value="">-- Choose website --</option><% websites.forEach(function(site) { %><option value="<%= site.domain %>" data-root="<%= site.document_root %>"><%= site.domain %> (<%= site.status %>)</option><% }); %></select></div>
+        <div class="mb-3"><label class="form-label-soft">Domain</label><input class="form-soft" id="reqDomain" readonly></div>
+        <div class="mb-0"><label class="form-label-soft">Webroot Path</label><input class="form-soft" id="reqWebroot" readonly></div>
+        <div class="d-flex align-items-center gap-2 p-3 rounded mt-3" style="background:var(--bg-card-alt)"><i class="fa-solid fa-circle-info" style="color:var(--primary)"></i><span style="font-size:0.78rem;color:var(--text-muted)">Domain must have DNS A record pointing to this server.</span></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border-soft)"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-primary-soft" id="btnRequest" onclick="requestCert()"><i class="fa-solid fa-check"></i> Request Certificate</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function loadCerts() {
+  fetch('/api/ssl/certs', { credentials: 'include' })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    document.getElementById('totalCerts').textContent = data.certs.length;
+    var valid = data.certs.filter(function(c) { return c.valid; }).length;
+    document.getElementById('validCerts').textContent = valid;
+    document.getElementById('autoRenewStatus').textContent = data.autoRenew ? 'Active' : 'Inactive';
+    renderCerts(data.certs);
+  })
+  .catch(function() {
+    document.getElementById('cert-list').innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Error loading certificates</td></tr>';
+  });
+}
+
+function renderCerts(certs) {
+  if (certs.length === 0) {
+    document.getElementById('cert-list').innerHTML = '<tr><td colspan="5" class="text-center py-4" style="color:var(--text-muted)">No certificates found. Click "New Certificate" to get started.</td></tr>';
+    return;
+  }
+  var html = '';
+  certs.forEach(function(cert) {
+    var statusBadge = cert.valid ? '<span class="badge-soft success">Valid</span>' : '<span class="badge-soft danger">Expired</span>';
+    var domains = cert.domains.join(', ');
+    if (domains.length > 60) domains = domains.substring(0, 60) + '...';
+    html += '<tr>';
+    html += '<td><strong>' + escapeHtml(cert.name) + '</strong></td>';
+    html += '<td><small style="color:var(--text-muted)">' + escapeHtml(domains) + '</small></td>';
+    html += '<td>' + cert.expiry + '</td>';
+    html += '<td>' + statusBadge + '</td>';
+    html += '<td><button class="act-icon" onclick="renewCert(\'' + escapeHtml(cert.name) + '\')" title="Renew"><i class="fa-solid fa-rotate"></i></button> <button class="act-icon danger" onclick="deleteCert(\'' + escapeHtml(cert.name) + '\')" title="Delete"><i class="fa-solid fa-trash"></i></button></td></tr>';
+  });
+  document.getElementById('cert-list').innerHTML = html;
+}
+
+function showRequestModal() {
+  document.getElementById('reqWebsite').value = '';
+  document.getElementById('reqDomain').value = '';
+  document.getElementById('reqWebroot').value = '';
+  document.getElementById('btnRequest').disabled = false;
+  new bootstrap.Modal(document.getElementById('requestModal')).show();
+}
+
+function onWebsiteSelect() {
+  var sel = document.getElementById('reqWebsite');
+  var opt = sel.options[sel.selectedIndex];
+  if (opt.value) {
+    document.getElementById('reqDomain').value = opt.value;
+    document.getElementById('reqWebroot').value = opt.getAttribute('data-root');
+  } else {
+    document.getElementById('reqDomain').value = '';
+    document.getElementById('reqWebroot').value = '';
+  }
+}
+
+function requestCert() {
+  var domain = document.getElementById('reqDomain').value.trim();
+  var webroot = document.getElementById('reqWebroot').value.trim();
+  if (!domain) return whpToast('Warning', 'Domain required', 'warning');
+  document.getElementById('btnRequest').disabled = true;
+  document.getElementById('btnRequest').textContent = 'Requesting...';
+  fetch('/api/ssl/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ domain: domain, webroot: webroot || undefined }) })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) { whpToast('Error', data.error, 'error'); document.getElementById('btnRequest').disabled = false; document.getElementById('btnRequest').textContent = 'Request Certificate'; return; }
+    bootstrap.Modal.getInstance(document.getElementById('requestModal')).hide();
+    whpToast('Certificate Issued', 'SSL certificate has been issued and installed.', 'success');
+    loadCerts();
+  })
+  .catch(function(e) {
+    whpToast('Error', e.message, 'error');
+    document.getElementById('btnRequest').disabled = false;
+    document.getElementById('btnRequest').textContent = 'Request Certificate';
+  });
+}
+
+function renewCert(certName) {
+  whpConfirm('Renew?', 'Renew "' + certName + '"?', function() {
+    fetch('/api/ssl/renew', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ certName: certName }) })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) return whpToast('Error', data.error, 'error');
+      whpToast('Renewed', 'Certificate renewed.', 'success');
+      loadCerts();
+    });
+  });
+}
+
+function renewAllCerts() {
+  whpConfirm('Renew All?', 'Renew all certificates?', function() {
+    fetch('/api/ssl/renew-all', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) return whpToast('Error', data.error, 'error');
+      whpToast('All Renewed', 'All certificates renewed.', 'success');
+      loadCerts();
+    });
+  });
+}
+
+function deleteCert(certName) {
+  whpConfirm('Delete Certificate?', 'Delete "' + certName + '"? This cannot be undone.', function() {
+    fetch('/api/ssl/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ certName: certName }) })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) return whpToast('Error', data.error, 'error');
+      whpToast('Deleted', 'Certificate deleted.', 'success');
+      loadCerts();
+    });
+  });
+}
+
+function enableAutoRenew() {
+  fetch('/api/ssl/auto-renew', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) return whpToast('Error', data.error, 'error');
+    whpToast('Auto-Renew Enabled', '', 'success');
+    loadCerts();
+  });
+}
+
+function escapeHtml(str) {
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', function() { loadCerts(); });
+</script>

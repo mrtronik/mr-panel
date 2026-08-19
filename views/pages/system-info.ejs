@@ -1,0 +1,177 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>System Information</span></div>
+  <div class="page-header"><h1><i class="fa-solid fa-server"></i> System Information</h1><p class="subtitle">Server stats, CPU, memory, disk, and services.</p></div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6">
+      <div class="card-soft h-100">
+        <div class="card-head"><h3><i class="fa-solid fa-server"></i> System</h3></div>
+        <div class="card-body p-0">
+          <table class="table-soft">
+            <tbody>
+              <tr><td style="width:160px"><strong>Hostname</strong></td><td><%= system.hostname %></td></tr>
+              <tr><td><strong>Home Directory</strong></td><td><%= system.homeDirectory %></td></tr>
+              <tr><td><strong>Uptime</strong></td><td><%= system.uptime %></td></tr>
+              <tr><td><strong>Cores</strong></td><td><%= system.coresCount %></td></tr>
+              <tr><td><strong>OS</strong></td><td><%= system.osType %> <%= system.osRelease %></td></tr>
+              <tr><td><strong>Architecture</strong></td><td><%= system.arch %></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card-soft h-100">
+        <div class="card-head"><h3><i class="fa-solid fa-microchip"></i> CPU</h3></div>
+        <div class="card-body p-0">
+          <table class="table-soft">
+            <thead><tr><th>Brand</th><th>Model</th><th>BogoMIPS</th><th>Speed</th></tr></thead>
+            <tbody>
+              <% cpu.forEach(function(c) { %>
+              <tr>
+                <td><%= c.brand %></td>
+                <td><%= c.model %></td>
+                <td><%= c.bogoMIPS %></td>
+                <td><%= c.speed %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6">
+      <div class="card-soft">
+        <div class="card-head"><h3><i class="fa-solid fa-memory"></i> RAM</h3></div>
+        <div class="card-body text-center">
+          <div id="ram-chart" style="min-height:300px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card-soft">
+        <div class="card-head"><h3><i class="fa-solid fa-hard-drive"></i> Swap</h3></div>
+        <div class="card-body text-center">
+          <div id="swap-chart" style="min-height:300px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% diskUsage.forEach(function(d) { %>
+  <div class="row g-3 mb-3">
+    <div class="col-12">
+      <div class="card-soft">
+        <div class="card-head"><h3><i class="fa-solid fa-chart-pie"></i> Disk — <%= d.mount %></h3></div>
+        <div class="card-body text-center">
+          <div id="disk-chart-<%= d.mount.replace(/\//g, '-') %>" style="min-height:280px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% }); %>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-6">
+      <div class="card-soft h-100">
+        <div class="card-head"><h3><i class="fa-solid fa-cogs"></i> Services</h3></div>
+        <div class="card-body p-0">
+          <table class="table-soft">
+            <thead><tr><th>Service</th><th>Version</th><th>Status</th></tr></thead>
+            <tbody>
+              <% services.forEach(function(s) { %>
+              <tr>
+                <td><strong><%= s.name %></strong></td>
+                <td><%= s.version %></td>
+                <td>
+                  <% if (s.status === 'running') { %>
+                    <span class="badge-soft success">Running</span>
+                  <% } else { %>
+                    <span class="badge-soft danger">Stopped</span>
+                  <% } %>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card-soft h-100">
+        <div class="card-head"><h3><i class="fa-solid fa-gauge-high"></i> Load Average</h3></div>
+        <div class="card-body p-0">
+          <table class="table-soft">
+            <tbody>
+              <tr><td style="width:160px"><strong>1 Minute</strong></td><td><%= loadAverage.one %></td></tr>
+              <tr><td><strong>5 Minutes</strong></td><td><%= loadAverage.five %></td></tr>
+              <tr><td><strong>15 Minutes</strong></td><td><%= loadAverage.fifteen %></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/assets/libs/apexcharts/apexcharts.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var diskUsage = <%- JSON.stringify(diskUsage) %>;
+    var memory = <%- JSON.stringify(memory) %>;
+
+    diskUsage.forEach(function(d) {
+        var chartId = 'disk-chart-' + d.mount.replace(/\//g, '-');
+        var el = document.getElementById(chartId);
+        if (!el) return;
+        var usedGB = (d.usedBytes / (1024*1024*1024)).toFixed(2);
+        var availGB = (d.availableBytes / (1024*1024*1024)).toFixed(2);
+        var reserved = (d.totalBytes - d.usedBytes - d.availableBytes) / (1024*1024*1024);
+        new ApexCharts(el, {
+            chart: { type: 'donut', height: 280 },
+            series: [parseFloat(usedGB), parseFloat(availGB), Math.max(0, parseFloat(reserved.toFixed(2)))],
+            labels: ['Used', 'Available', 'Reserved'],
+            colors: ['#ef4444', '#22c55e', '#3b82f6'],
+            legend: { position: 'bottom', fontSize: '12px' },
+            dataLabels: { enabled: true, formatter: function(val, opts) { return opts.w.config.labels[opts.seriesIndex] + ': ' + opts.w.config.series[opts.seriesIndex] + ' GB'; } },
+            plotOptions: { pie: { donut: { labels: { show: true, name: { show: true }, value: { show: false } } } } }
+        }).render();
+    });
+
+    if (memory.ram.totalBytes > 0) {
+        var ramUsed = (memory.ram.usedBytes / (1024*1024*1024)).toFixed(2);
+        var ramFree = (memory.ram.freeBytes / (1024*1024*1024)).toFixed(2);
+        var ramCached = (memory.ram.cachedBytes / (1024*1024*1024)).toFixed(2);
+        var ramTotal = (memory.ram.totalBytes / (1024*1024*1024)).toFixed(2);
+        new ApexCharts(document.getElementById('ram-chart'), {
+            chart: { type: 'donut', height: 300 },
+            series: [parseFloat(ramUsed), parseFloat(ramFree), parseFloat(ramCached)],
+            labels: ['Used', 'Free', 'Cached'],
+            colors: ['#ef4444', '#22c55e', '#3b82f6'],
+            legend: { position: 'bottom', fontSize: '12px' },
+            dataLabels: { enabled: true, formatter: function(val, opts) { return opts.w.config.labels[opts.seriesIndex] + ': ' + opts.w.config.series[opts.seriesIndex] + ' GB'; } },
+            plotOptions: { pie: { donut: { labels: { show: true, name: { show: true, formatter: function() { return 'Total: ' + ramTotal + ' GB'; } }, value: { show: false } } } } }
+        }).render();
+    }
+
+    if (memory.swap.totalBytes > 0) {
+        var swapUsed = (memory.swap.usedBytes / (1024*1024*1024)).toFixed(2);
+        var swapFree = (memory.swap.freeBytes / (1024*1024*1024)).toFixed(2);
+        var swapTotal = (memory.swap.totalBytes / (1024*1024*1024)).toFixed(2);
+        new ApexCharts(document.getElementById('swap-chart'), {
+            chart: { type: 'donut', height: 300 },
+            series: [parseFloat(swapUsed), parseFloat(swapFree)],
+            labels: ['Used', 'Free'],
+            colors: ['#ef4444', '#22c55e'],
+            legend: { position: 'bottom', fontSize: '12px' },
+            dataLabels: { enabled: true, formatter: function(val, opts) { return opts.w.config.labels[opts.seriesIndex] + ': ' + opts.w.config.series[opts.seriesIndex] + ' GB'; } },
+            plotOptions: { pie: { donut: { labels: { show: true, name: { show: true, formatter: function() { return 'Total: ' + swapTotal + ' GB'; } }, value: { show: false } } } } }
+        }).render();
+    }
+});
+</script>

@@ -1,0 +1,224 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Databases</span></div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div><h1>MySQL Databases</h1><p class="subtitle">Create and manage databases &amp; users.</p></div>
+    <div class="d-flex gap-2">
+      <button class="btn-primary-soft" onclick="showCreateDbModal()"><i class="fa-solid fa-plus"></i> New Database</button>
+      <button class="btn-ghost" onclick="showCreateUserModal()"><i class="fa-solid fa-user-plus"></i> New User</button>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="stat-card"><span class="stat-icon cyan"><i class="fa-solid fa-database"></i></span><div class="stat-info"><p class="stat-label">Databases</p><p class="stat-value" id="dbCount"><%= databases.length %></p></div></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card"><span class="stat-icon purple"><i class="fa-solid fa-user-pen"></i></span><div class="stat-info"><p class="stat-label">DB Users</p><p class="stat-value" id="userCount"><%= users.length %></p></div></div></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card-soft">
+        <div class="card-head"><h3>Database List</h3></div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table-soft">
+              <thead><tr><th>Database Name</th><th style="width:120px">Tables</th><th style="width:80px">Actions</th></tr></thead>
+              <tbody>
+                <% databases.forEach(function(db) { %>
+                <tr>
+                  <td><span class="domain-name"><%= db %></span></td>
+                  <td><button class="btn-ghost" style="padding:3px 10px;font-size:0.75rem" onclick="showTables('<%= db %>')"><i class="fa-solid fa-table"></i> View</button></td>
+                  <td><button class="act-icon danger" onclick="deleteDb('<%= db %>')" title="Delete"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+                <% }); %>
+                <% if (databases.length === 0) { %>
+                <tr><td colspan="3" class="text-center text-muted py-3">No databases</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card-soft">
+        <div class="card-head"><h3>Database Users</h3><button class="btn-ghost" style="padding:5px 12px;font-size:0.78rem" onclick="showCreateUserModal()"><i class="fa-solid fa-user-plus"></i> Add User</button></div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table-soft">
+              <thead><tr><th>User</th><th>Host</th><th style="width:120px">Actions</th></tr></thead>
+              <tbody>
+                <% users.forEach(function(u) { %>
+                <tr>
+                  <td><strong><%= u.user %></strong></td>
+                  <td><code style="font-size:0.78rem"><%= u.host %></code></td>
+                  <td>
+                    <button class="act-icon" onclick="showGrantModal('<%= u.user %>', '<%= u.host %>')" title="Grant"><i class="fa-solid fa-shield-halved"></i></button>
+                    <button class="act-icon danger" onclick="deleteUser('<%= u.user %>', '<%= u.host %>')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                  </td>
+                </tr>
+                <% }); %>
+                <% if (users.length === 0) { %>
+                <tr><td colspan="3" class="text-center text-muted py-3">No users</td></tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tables-section" style="display:none">
+    <div class="card-soft mt-3">
+      <div class="card-head d-flex justify-content-between align-items-center">
+        <h3 id="tables-title">Tables</h3>
+        <button class="btn-ghost" style="padding:5px 12px;font-size:0.78rem" onclick="document.getElementById('tables-section').style.display='none'"><i class="fa-solid fa-xmark"></i> Close</button>
+      </div>
+      <div class="card-body p-0">
+        <table class="table-soft">
+          <thead><tr><th>Table</th><th>Rows</th></tr></thead>
+          <tbody id="tables-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal fade" id="createDbModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-bottom:1px solid var(--border-soft)"><h5 class="modal-title"><i class="fa-solid fa-database me-2" style="color:var(--primary)"></i>New Database</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><label class="form-label-soft">Database Name</label><input class="form-soft" id="newDbName" placeholder="my_database" /></div>
+      <div class="modal-footer" style="border-top:1px solid var(--border-soft)"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-primary-soft" onclick="doCreateDb()"><i class="fa-solid fa-check"></i> Create</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="createUserModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-bottom:1px solid var(--border-soft)"><h5 class="modal-title"><i class="fa-solid fa-user-plus me-2" style="color:var(--primary)"></i>New Database User</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label-soft">Username</label><input class="form-soft" id="newUser" placeholder="dbuser"></div>
+        <div class="mb-3"><label class="form-label-soft">Password</label><input type="password" class="form-soft" id="newPass" placeholder="Password"></div>
+        <div class="mb-0"><label class="form-label-soft">Host <small style="color:var(--text-muted)">(default: %)</small></label><input class="form-soft" id="newHost" placeholder="%" value="%"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border-soft)"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-primary-soft" onclick="doCreateUser()"><i class="fa-solid fa-check"></i> Create User</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="grantModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:14px;border:1px solid var(--border-color)">
+      <div class="modal-header" style="border-bottom:1px solid var(--border-soft)"><h5 class="modal-title"><i class="fa-solid fa-shield-halved me-2" style="color:var(--primary)"></i>Grant Privileges</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label-soft">User</label><input class="form-soft" id="grantUser" readonly></div>
+        <div class="mb-0"><label class="form-label-soft">Database</label><select class="form-soft" id="grantDb"><% databases.forEach(function(db) { %><option value="<%= db %>"><%= db %></option><% }); %></select></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border-soft)"><button class="btn-ghost" data-bs-dismiss="modal">Cancel</button><button class="btn-primary-soft" onclick="doGrant()"><i class="fa-solid fa-check"></i> Grant ALL</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showCreateDbModal() {
+  document.getElementById('newDbName').value = '';
+  new bootstrap.Modal(document.getElementById('createDbModal')).show();
+}
+
+function doCreateDb() {
+  var name = document.getElementById('newDbName').value.trim();
+  if (!name) return whpToast('Warning', 'Name required', 'warning');
+  fetch('/api/database/create-db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ name: name }) })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) return whpToast('Error', data.error, 'error');
+    whpToast('Database Created', 'New MySQL database has been created.', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('createDbModal')).hide();
+    setTimeout(function() { location.reload(); }, 500);
+  });
+}
+
+function deleteDb(name) {
+  whpConfirm('Delete Database?', 'Delete "' + name + '" and all its data? This cannot be undone.', function() {
+    fetch('/api/database/delete-db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ name: name }) })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) return whpToast('Error', data.error, 'error');
+      whpToast('Deleted', 'Database deleted.', 'success');
+      setTimeout(function() { location.reload(); }, 500);
+    });
+  });
+}
+
+function showCreateUserModal() {
+  document.getElementById('newUser').value = '';
+  document.getElementById('newPass').value = '';
+  document.getElementById('newHost').value = '%';
+  new bootstrap.Modal(document.getElementById('createUserModal')).show();
+}
+
+function doCreateUser() {
+  var username = document.getElementById('newUser').value.trim();
+  var password = document.getElementById('newPass').value;
+  var host = document.getElementById('newHost').value.trim();
+  if (!username || !password) return whpToast('Warning', 'Username and password required', 'warning');
+  fetch('/api/database/create-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username: username, password: password, host: host }) })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) return whpToast('Error', data.error, 'error');
+    whpToast('User Created', 'Database user has been created.', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+    setTimeout(function() { location.reload(); }, 500);
+  });
+}
+
+function deleteUser(username, host) {
+  whpConfirm('Delete User?', 'Delete user "' + username + '@' + host + '"?', function() {
+    fetch('/api/database/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username: username, host: host }) })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) return whpToast('Error', data.error, 'error');
+      whpToast('Deleted', 'User deleted.', 'success');
+      setTimeout(function() { location.reload(); }, 500);
+    });
+  });
+}
+
+function showGrantModal(username, host) {
+  document.getElementById('grantUser').value = username + '@' + host;
+  new bootstrap.Modal(document.getElementById('grantModal')).show();
+}
+
+function doGrant() {
+  var userParts = document.getElementById('grantUser').value.split('@');
+  var database = document.getElementById('grantDb').value;
+  fetch('/api/database/grant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username: userParts[0], database: database, host: userParts[1] }) })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) return whpToast('Error', data.error, 'error');
+    whpToast('Privileges Granted', 'User has been granted ALL privileges.', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('grantModal')).hide();
+  });
+}
+
+function showTables(db) {
+  fetch('/api/database/tables?database=' + encodeURIComponent(db), { credentials: 'include' })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.error) return whpToast('Error', data.error, 'error');
+    document.getElementById('tables-title').textContent = db + ' - Tables';
+    var html = '';
+    if (data.tables.length === 0) {
+      html = '<tr><td colspan="2" class="text-center text-muted py-3">No tables</td></tr>';
+    } else {
+      data.tables.forEach(function(t) {
+        html += '<tr><td><strong>' + t + '</strong></td><td>-</td></tr>';
+      });
+    }
+    document.getElementById('tables-body').innerHTML = html;
+    document.getElementById('tables-section').style.display = '';
+  });
+}
+</script>

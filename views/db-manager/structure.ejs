@@ -1,0 +1,116 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper">
+    <!-- Left Sidebar -->
+    <div class="pma-sidebar">
+      <div class="pma-sidebar-header">
+        <a href="/db-manager" class="pma-breadcrumb"><i class="fa-solid fa-database"></i> <%= dbName %></a>
+      </div>
+      <div class="pma-tree">
+        <% tables.forEach(function(t) { %>
+        <div class="pma-tree-item <%= t === tableName ? 'active' : '' %>">
+          <a href="/db-manager/<%= dbName %>/browse/<%= t %>" class="tree-link">
+            <i class="fa-solid fa-table tree-icon-sm"></i> <%= t %>
+          </a>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="pma-main">
+      <div class="pma-nav">
+        <span class="pma-nav-title">
+          <a href="/db-manager/<%= dbName %>" class="pma-breadcrumb"><%= dbName %></a>
+          <i class="fa-solid fa-angle-right" style="font-size:0.7em"></i>
+          <%= tableName %>
+        </span>
+        <div class="pma-tabs">
+          <a href="/db-manager/<%= dbName %>/structure/<%= tableName %>" class="pma-tab active">Structure</a>
+          <a href="/db-manager/<%= dbName %>/browse/<%= tableName %>" class="pma-tab">Browse</a>
+          <a href="/db-manager/<%= dbName %>/sql?table=<%= tableName %>" class="pma-tab">SQL</a>
+          <a href="/db-manager/<%= dbName %>/export?table=<%= tableName %>" class="pma-tab">Export</a>
+        </div>
+      </div>
+
+      <div class="pma-content">
+        <% if (status) { %>
+        <div class="pma-info-bar">
+          <span><b>Engine:</b> <%= status.Engine || '-' %></span>
+          <span><b>Collation:</b> <%= status.Collation || '-' %></span>
+          <span><b>Rows:</b> <%= status.Rows || 0 %></span>
+          <span><b>Size:</b> <%= status.Data_length ? (status.Data_length / 1024).toFixed(1) + ' KB' : '-' %></span>
+        </div>
+        <% } %>
+
+        <div class="pma-box">
+          <div class="pma-box-header">
+            <h3><i class="fa-solid fa-columns"></i> Columns (<%= columns.length %>)</h3>
+          </div>
+          <table class="pma-table">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Collation</th>
+                <th>Null</th>
+                <th>Default</th>
+                <th>Extra</th>
+                <th>Key</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% columns.forEach(function(col, i) { %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td class="pma-col-name"><%= col.Field %></td>
+                <td class="pma-col-type"><%= col.Type %></td>
+                <td><%= col.Collation || '-' %></td>
+                <td><%= col.Null === 'YES' ? '<span class="badge bg-info">YES</span>' : '<span class="badge bg-secondary">NO</span>' %></td>
+                <td><%= col.Default !== null ? col.Default : '<span class="text-muted">NULL</span>' %></td>
+                <td><%= col.Extra || '-' %></td>
+                <td>
+                  <% if (col.Key === 'PRI') { %><span class="badge bg-warning text-dark">PRI</span><% } %>
+                  <% if (col.Key === 'UNI') { %><span class="badge bg-info">UNI</span><% } %>
+                  <% if (col.Key === 'MUL') { %><span class="badge bg-secondary">MUL</span><% } %>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+        <% if (indexes && indexes.length > 0) { %>
+        <div class="pma-box">
+          <div class="pma-box-header">
+            <h3><i class="fa-solid fa-key"></i> Indexes</h3>
+          </div>
+          <table class="pma-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Column</th>
+                <th>Cardinality</th>
+                <th>Type</th>
+                <th>Unique</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% indexes.forEach(function(idx) { %>
+              <tr>
+                <td><%= idx.Key_name %></td>
+                <td><%= idx.Column_name %></td>
+                <td><%= idx.Cardinality %></td>
+                <td><%= idx.Index_type %></td>
+                <td><%= idx.Non_unique === 0 ? '<span class="badge bg-success">YES</span>' : 'NO' %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</main>

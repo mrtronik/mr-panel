@@ -1,0 +1,177 @@
+<div class="page-content">
+  <div class="breadcrumb-bar">
+    <a href="/dashboard">Home</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <a href="/webmail">Email</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <a href="/webmail">Inbox</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <span>Read Message</span>
+  </div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div>
+      <h1>Read Message</h1>
+      <p class="subtitle">Viewing email from <%= email.from || 'Unknown' %></p>
+    </div>
+    <a class="btn-ghost" href="/webmail"><i class="fa-solid fa-arrow-left"></i> Back to Inbox</a>
+  </div>
+
+  <div class="mail-layout">
+    <div class="mail-side">
+      <a class="mail-compose-btn" href="/webmail/compose">
+        <i class="fa-solid fa-pen-to-square"></i> Compose
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <i class="fa-solid fa-inbox"></i> Inbox <span class="mf-count"><%= unreadCount %></span>
+      </a>
+      <a class="mail-folder" href="/webmail?folder=starred">
+        <i class="fa-solid fa-star"></i> Starred
+      </a>
+      <a class="mail-folder" href="/webmail?folder=sent">
+        <i class="fa-solid fa-paper-plane"></i> Sent
+      </a>
+      <a class="mail-folder" href="/webmail?folder=spam">
+        <i class="fa-solid fa-circle-exclamation"></i> Spam
+      </a>
+      <a class="mail-folder" href="/webmail?folder=trash">
+        <i class="fa-solid fa-trash"></i> Trash
+      </a>
+      <div class="mail-side-divider"></div>
+      <div class="mail-side-label">Labels</div>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#ef4444"></span> Clients
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#10b981"></span> Server Alerts
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#f59e0b"></span> Billing
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#8b5cf6"></span> Personal
+      </a>
+    </div>
+    <div class="mail-main">
+      <div class="mail-read">
+        <div class="mail-read-head">
+          <h2 class="mail-read-subject"><%= email.subject || '(No Subject)' %></h2>
+          <div class="mail-read-meta">
+           <%
+  var fromName = email.from || 'Unknown';
+
+  // Bersihkan format: "Fst Tur" <email@gmail.com>
+  var match = fromName.match(/^"?([^"<]+?)"?\s*(?:<.*>)?$/);
+  fromName = match ? match[1].trim() : fromName.trim();
+
+  var initials = fromName
+    .split(/\s+/)
+    .map(function(w) {
+      return w.charAt(0);
+    })
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
+  var colors = [
+    'av-blue',
+    'av-red',
+    'av-green',
+    'av-purple',
+    'av-orange',
+    'av-teal',
+    'av-pink',
+    'av-gray'
+  ];
+
+  var colorIdx =
+    Math.abs(
+      fromName.charCodeAt(0) +
+      (fromName.charCodeAt(1) || 0)
+    ) % colors.length;
+
+  var dateStr = new Date(email.date).toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+%>
+            <span class="mi-avatar <%= colors[colorIdx] %>"><%= initials %></span>
+            <div class="mail-read-from">
+              <div class="mrf-name"><%= fromName %></div>
+              <div class="mrf-email"><%= email.fromAddress || '' %></div>
+              <div class="mail-read-to">to: <%= currentUser %></div>
+            </div>
+            <div class="mail-read-date"><%= dateStr %></div>
+          </div>
+        </div>
+        <div class="mail-read-body" id="emailBody">
+          <% if (email.html) { %>
+            <iframe srcdoc="<%= email.html.replace(/"/g, '&quot;') %>" sandbox="allow-same-origin" style="width:100%;min-height:400px;border:none;background:#fff;"></iframe>
+          <% } else { %>
+            <pre style="white-space:pre-wrap;font-family:inherit;"><%= email.text || '' %></pre>
+          <% } %>
+        </div>
+        <% if (email.attachments && email.attachments.length > 0) { %>
+          <div class="mail-read-attach">
+            <div class="mra-title"><i class="fa-solid fa-paperclip"></i> <%= email.attachments.length %> Attachment(s)</div>
+            <% email.attachments.forEach(function(att) { %>
+              <a class="mail-attach-item" href="/api/mail/attachment/<%= uid %>/<%= encodeURIComponent(att.filename) %>" download>
+                <span class="mai-icon av-blue"><i class="fa-solid fa-file"></i></span>
+                <span>
+                  <span class="mai-name d-block"><%= att.filename %></span>
+                  <span class="mai-size"><%= att.size ? Math.round(att.size/1024) + ' KB' : '' %></span>
+                </span>
+                <i class="fa-solid fa-download mai-dl"></i>
+              </a>
+            <% }); %>
+          </div>
+        <% } %>
+        <div class="mail-read-actions">
+          <a class="btn-primary-soft" href="/webmail/compose?to=<%= encodeURIComponent(email.fromAddress || '') %>&subject=<%= encodeURIComponent('Re: ' + (email.subject || '').replace(/^Re:\s*/i, '')) %>">
+            <i class="fa-solid fa-reply"></i> Reply
+          </a>
+          <a class="btn-primary-soft" href="/webmail/compose?to=<%= encodeURIComponent(email.fromAddress || '') %>&subject=<%= encodeURIComponent(email.subject || '') %>">
+            <i class="fa-solid fa-share"></i> Forward
+          </a>
+          <button class="btn-ghost" onclick="toggleSeen(<%= uid %>)">
+            <i class="fa-solid fa-envelope-open"></i> Mark Unread
+          </button>
+          <button class="btn-ghost" style="color:#ef4444" onclick="deleteEmail(<%= uid %>)">
+            <i class="fa-solid fa-trash"></i> Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function deleteEmail(uid) {
+  whpConfirm('Delete Email?', 'This email will be permanently deleted.', function(confirmed) {
+    if (confirmed) {
+      fetch('/api/mail/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: uid })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          whpToast('Deleted', 'Email has been deleted.', 'success');
+          setTimeout(function() { window.location.href = '/webmail'; }, 1000);
+        }
+      });
+    }
+  });
+}
+
+function toggleSeen(uid) {
+  fetch('/api/mail/seen', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uid: uid, seen: false })
+  }).then(function() { window.location.href = '/webmail'; });
+}
+</script>

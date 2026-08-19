@@ -1,0 +1,80 @@
+             <section class="breadcrumb__before p-relative">
+                <div class="breadcrumb__area overflow-hidden position-relative" data-background="assets/imgs/shapes/breadcrumb-shape.png">
+                    <div class="breadcrumb__shapes">
+                        <div class="breadcrumb__shapes-shape-1"></div>
+                        <div class="breadcrumb__shapes-shape-2"></div>
+                        <div class="breadcrumb__shapes-shape-3"></div>
+                        <div class="breadcrumb__shapes-shape-4"></div>
+                        <div class="breadcrumb__shapes-shape-5 upDown">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-1.png" alt="img not found">
+                        </div>
+                        <div class="breadcrumb__shapes-shape-6 line-to-bottom-360">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-2.png" alt="img not found">
+                        </div>
+                        <div class="breadcrumb__shapes-shape-7 line-to-bottom-360-l">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-3.png" alt="img not found">
+                        </div>
+                        <div class="breadcrumb__shapes-shape-8 leftRight">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-4.png" alt="img not found">
+                        </div>
+                        <div class="breadcrumb__shapes-shape-9">
+                            <img src="assets/imgs/shapes/breadcrumb-shape-5.png" alt="img not found">
+                        </div>
+                    </div>
+                    <div class="container">
+                        <div class="row align-items-center justify-content-between">
+                            <div class="col-12">
+                                <div class="breadcrumb__content">
+                                    <div class="breadcrumb__title-wrapper">
+                                        <h1 class="breadcrumb__title"><%= title %></h1>
+                                    </div>
+                                    <div class="breadcrumb__menu">
+                                        <nav>
+                                            <ul>
+                                                <li><span><a href="/dashboard"> <img src="assets/imgs/icon/home-icon.png" alt="img not found">Home</a></span></li>
+                                                <li><span><a href="/mail/inbox">Inbox</a></span></li>
+                                                <li class="active"><span>Detail</span></li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+             </section>
+<section class="about__area section-space-top section-space-bottom-1">
+                <div class="container">
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="/mail/inbox" class="btn btn-secondary"><i class="ri-arrow-left-line"></i> Back to Inbox</a>
+    <a href="/mail/reply/<%= typeof uid !== 'undefined' ? uid : '' %>?from=inbox" class="btn btn-primary"><i class="ri-reply-fill"></i> Reply</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h4 class="mb-3"><%= email.subject || "(No Subject)" %></h4>
+        <hr>
+        <div class="mb-3">
+            <p class="mb-1"><strong>From:</strong> <%= email.from ? email.from.text : "-" %></p>
+            <p class="mb-1"><strong>To:</strong> <%= email.to ? email.to.text : "-" %></p>
+            <% if (email.cc) { %>
+                <p class="mb-1"><strong>CC:</strong> <%= email.cc.text %></p>
+            <% } %>
+            <p class="mb-0"><strong>Date:</strong> <%= email.date %></p>
+        </div>
+        <hr>
+        <div class="email-body">
+            <% if(email.html){ %>
+                <iframe srcdoc="<%= email.html.replace(/"/g, '&quot;') %>" sandbox="allow-same-origin" style="width:100%;min-height:400px;border:none;background:#fff;"></iframe>
+            <% }else{ %>
+                <pre class="mb-0" style="white-space:pre-wrap;font-family:inherit;"><%= email.text %></pre>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+    </div>
+</section>
+
+

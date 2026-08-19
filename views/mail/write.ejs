@@ -1,0 +1,166 @@
+<div class="page-content">
+  <div class="breadcrumb-bar">
+    <a href="/dashboard">Home</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <a href="/webmail">Email</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <span>Compose</span>
+  </div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div>
+      <h1>Compose Email</h1>
+      <p class="subtitle">Write a new message from <%= currentUser %></p>
+    </div>
+    <a class="btn-ghost" href="/webmail"><i class="fa-solid fa-arrow-left"></i> Back to Inbox</a>
+  </div>
+
+  <div class="mail-layout">
+    <div class="mail-side">
+      <a class="mail-compose-btn" href="/webmail/compose">
+        <i class="fa-solid fa-pen-to-square"></i> Compose
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <i class="fa-solid fa-inbox"></i> Inbox
+      </a>
+      <a class="mail-folder" href="/webmail?folder=starred">
+        <i class="fa-solid fa-star"></i> Starred
+      </a>
+      <a class="mail-folder" href="/webmail?folder=sent">
+        <i class="fa-solid fa-paper-plane"></i> Sent
+      </a>
+      <a class="mail-folder" href="/webmail?folder=spam">
+        <i class="fa-solid fa-circle-exclamation"></i> Spam
+      </a>
+      <a class="mail-folder" href="/webmail?folder=trash">
+        <i class="fa-solid fa-trash"></i> Trash
+      </a>
+      <div class="mail-side-divider"></div>
+      <div class="mail-side-label">Labels</div>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#ef4444"></span> Clients
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#10b981"></span> Server Alerts
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#f59e0b"></span> Billing
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <span class="mail-label-dot" style="background:#8b5cf6"></span> Personal
+      </a>
+    </div>
+    <div class="mail-main">
+      <div class="mail-compose">
+        <div class="compose-field">
+          <span class="cf-label">From</span>
+          <input type="text" value="<%= currentUser %>" readonly style="background:var(--bg-soft);cursor:not-allowed" />
+        </div>
+        <div class="compose-field">
+          <span class="cf-label">To</span>
+          <input type="email" id="composeTo" placeholder="recipient@example.com" value="<%= prefill && prefill.to ? prefill.to : '' %>" />
+        </div>
+        <div class="compose-field">
+          <span class="cf-label">Subject</span>
+          <input type="text" id="composeSubject" placeholder="Email subject" value="<%= prefill && prefill.subject ? prefill.subject : '' %>" />
+        </div>
+        <div class="compose-body">
+          <textarea id="composeBody" placeholder="Write your message here..."><%= prefill && prefill.body ? prefill.body : '' %></textarea>
+        </div>
+        <div class="compose-attach-bar">
+          <i class="fa-solid fa-paperclip" style="color:var(--primary)"></i>
+          <span>Attach files:</span>
+          <a href="javascript:void(0)" onclick="document.getElementById('fileInput').click()">Browse</a>
+          <input type="file" id="fileInput" style="display:none" multiple onchange="handleFiles(this)" />
+          <span id="fileLabel" style="margin-left:auto;color:var(--text-light)">No files attached</span>
+        </div>
+        <div class="compose-toolbar">
+          <button class="compose-send" onclick="sendEmail()">
+            <i class="fa-solid fa-paper-plane"></i> Send Email
+          </button>
+          <button class="btn-ghost" onclick="saveDraft()">
+            <i class="fa-solid fa-floppy-disk"></i> Save Draft
+          </button>
+          <button class="btn-ghost" onclick="discardCompose()">
+            <i class="fa-solid fa-trash"></i> Discard
+          </button>
+          <span style="margin-left:auto;font-size:0.78rem;color:var(--text-light)">
+            <i class="fa-solid fa-shield-halved" style="color:var(--primary)"></i> Encrypted with TLS
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function handleFiles(input) {
+  var label = document.getElementById('fileLabel');
+  if (input.files.length > 0) {
+    var names = Array.from(input.files).map(function(f) { return f.name; }).join(', ');
+    label.textContent = input.files.length + ' file(s): ' + names;
+  } else {
+    label.textContent = 'No files attached';
+  }
+}
+
+function sendEmail() {
+  var to = document.getElementById('composeTo').value;
+  var subject = document.getElementById('composeSubject').value;
+  var text = document.getElementById('composeBody').value;
+
+  if (!to || !subject) {
+    whpToast('Error', 'To and Subject are required', 'error');
+    return;
+  }
+
+  var btn = document.querySelector('.compose-send');
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+  btn.disabled = true;
+
+  var formData = new FormData();
+  formData.append('to', to);
+  formData.append('subject', subject);
+  formData.append('text', text);
+
+  var fileInput = document.getElementById('fileInput');
+  if (fileInput.files.length > 0) {
+    for (var i = 0; i < fileInput.files.length; i++) {
+      formData.append('attachments', fileInput.files[i]);
+    }
+  }
+
+  fetch('/api/mail/send', {
+    method: 'POST',
+    body: formData
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      whpToast('Email Sent', 'Your message to ' + to + ' was sent successfully.', 'success');
+      setTimeout(function() { window.location.href = '/webmail'; }, 1500);
+    } else {
+      whpToast('Send Failed', data.error || 'Unknown error', 'error');
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Email';
+      btn.disabled = false;
+    }
+  })
+  .catch(function(err) {
+    whpToast('Error', err.message, 'error');
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Email';
+    btn.disabled = false;
+  });
+}
+
+function saveDraft() {
+  whpToast('Draft Saved', 'Your email has been saved to Drafts.', 'info');
+}
+
+function discardCompose() {
+  document.getElementById('composeTo').value = '';
+  document.getElementById('composeSubject').value = '';
+  document.getElementById('composeBody').value = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileLabel').textContent = 'No files attached';
+  whpToast('Discarded', 'Draft has been discarded.', 'info');
+}
+</script>

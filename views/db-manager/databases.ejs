@@ -1,0 +1,329 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper">
+    <!-- Left Sidebar -->
+    <div class="pma-sidebar" id="pmaSidebar">
+      <div class="pma-sidebar-header">
+        <i class="fa-solid fa-database"></i> Databases
+      </div>
+      <div class="pma-tree" id="dbTree">
+        <% databases.forEach(function(dbName) { %>
+        <div class="pma-tree-item" onclick="toggleDbTree(this, '<%= dbName %>')">
+          <i class="fa-solid fa-database tree-icon"></i>
+          <span class="tree-label"><%= dbName %></span>
+          <i class="fa-solid fa-caret-right tree-caret"></i>
+        </div>
+        <div class="pma-tree-children" id="tree-<%= dbName %>"></div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="pma-main">
+      <div class="pma-nav">
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-primary active" id="tabDatabases" onclick="switchTab('databases')"><i class="fa-solid fa-database"></i> Databases</button>
+          <% if (users.length > 0 || typeof users !== 'undefined') { %>
+          <button class="btn btn-sm btn-outline" id="tabUsers" onclick="switchTab('users')"><i class="fa-solid fa-user"></i> MySQL Users</button>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Databases Tab -->
+      <div class="pma-content" id="panelDatabases">
+        <div class="pma-box">
+          <div class="pma-box-header">
+            <h3><i class="fa-solid fa-list"></i> Databases (<%= databases.length %>)</h3>
+            <button class="btn btn-sm btn-primary" onclick="showCreateDbModal()"><i class="fa-solid fa-plus"></i> New</button>
+          </div>
+          <table class="pma-table">
+            <thead>
+              <tr>
+                <th style="width:30px">#</th>
+                <th>Database</th>
+                <th style="width:120px">Collation</th>
+                <th style="width:120px">Tables</th>
+                <th style="width:180px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% databases.forEach(function(dbName, i) { %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td>
+                  <a href="/db-manager/<%= dbName %>" class="pma-db-link"><i class="fa-solid fa-database"></i> <%= dbName %></a>
+                </td>
+                <td>utf8mb4</td>
+                <td>-</td>
+                <td>
+                  <a href="/db-manager/<%= dbName %>/sql" class="btn btn-xs btn-outline" title="SQL"><i class="fa-solid fa-terminal"></i></a>
+                  <a href="/db-manager/<%= dbName %>/export" class="btn btn-xs btn-outline" title="Export"><i class="fa-solid fa-download"></i></a>
+                  <button class="btn btn-xs btn-outline btn-danger" title="Drop" onclick="confirmDropDb('<%= dbName %>')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Users Tab -->
+      <div class="pma-content" id="panelUsers" style="display:none">
+        <div class="pma-box">
+          <div class="pma-box-header">
+            <h3><i class="fa-solid fa-user"></i> MySQL Users (<span id="userCount"><%= users.length %></span>)</h3>
+            <button class="btn btn-sm btn-primary" onclick="showCreateUserModal()"><i class="fa-solid fa-plus"></i> New User</button>
+          </div>
+          <table class="pma-table">
+            <thead>
+              <tr>
+                <th style="width:30px">#</th>
+                <th>Username</th>
+                <th>Host</th>
+                <th style="width:200px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody">
+              <% users.forEach(function(u, i) { %>
+              <tr>
+                <td><%= i + 1 %></td>
+                <td><strong><i class="fa-solid fa-user" style="color:var(--primary);font-size:0.8rem"></i> <%= u.User %></strong></td>
+                <td><code style="font-size:0.8rem;background:var(--bg-soft);padding:2px 8px;border-radius:4px"><%= u.Host %></code></td>
+                <td>
+                  <button class="btn btn-xs btn-outline" title="Privileges" onclick="showGrantModal('<%= u.User %>', '<%= u.Host %>')"><i class="fa-solid fa-shield-halved"></i></button>
+                  <button class="btn btn-xs btn-outline" title="Change Password" onclick="showPassModal('<%= u.User %>', '<%= u.Host %>')"><i class="fa-solid fa-key"></i></button>
+                  <button class="btn btn-xs btn-outline btn-danger" title="Delete" onclick="confirmDeleteUser('<%= u.User %>', '<%= u.Host %>')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+              </tr>
+              <% }); %>
+              <% if (users.length === 0) { %>
+              <tr><td colspan="4" class="text-center text-muted py-3">No MySQL users</td></tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Create Database Modal -->
+<div class="modal fade" id="createDbModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-database"></i> Create Database</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <label class="form-label">Database name</label>
+        <input type="text" class="form-control" id="newDbName" placeholder="e.g. mydb">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="createDb()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-user-plus"></i> Create MySQL User</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-control" id="newDbUser" placeholder="e.g. myuser">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <div class="input-group">
+            <input type="password" class="form-control" id="newDbPass" placeholder="Password">
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePass()"><i class="fa-solid fa-eye" id="passEye"></i></button>
+          </div>
+        </div>
+        <div class="mb-0">
+          <label class="form-label">Host <small class="text-muted">(default: %)</small></label>
+          <input type="text" class="form-control" id="newDbHost" placeholder="%" value="%">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="createUser()">Create User</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Grant Privileges Modal -->
+<div class="modal fade" id="grantModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-shield-halved"></i> Grant Privileges</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">User</label>
+          <input type="text" class="form-control" id="grantUser" readonly>
+        </div>
+        <div class="mb-0">
+          <label class="form-label">Database</label>
+          <select class="form-select" id="grantDb">
+            <% databases.forEach(function(db) { %>
+            <option value="<%= db %>"><%= db %></option>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="doGrant()"><i class="fa-solid fa-check"></i> Grant ALL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="passModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-key"></i> Change Password</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">User</label>
+          <input type="text" class="form-control" id="passUser" readonly>
+        </div>
+        <div class="mb-0">
+          <label class="form-label">New Password</label>
+          <input type="password" class="form-control" id="newPassInput" placeholder="New password">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="doChangePass()"><i class="fa-solid fa-check"></i> Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(tab) {
+    document.getElementById('panelDatabases').style.display = tab === 'databases' ? '' : 'none';
+    document.getElementById('panelUsers').style.display = tab === 'users' ? '' : 'none';
+    document.getElementById('tabDatabases').className = 'btn btn-sm btn-' + (tab === 'databases' ? 'primary active' : 'outline');
+    document.getElementById('tabUsers').className = 'btn btn-sm btn-' + (tab === 'users' ? 'primary active' : 'outline');
+}
+
+function toggleDbTree(el, dbName) {
+    var children = document.getElementById('tree-' + dbName);
+    var caret = el.querySelector('.tree-caret');
+    if (children.classList.contains('open')) {
+        children.classList.remove('open');
+        caret.className = 'fa-solid fa-caret-right tree-caret';
+        return;
+    }
+    children.classList.add('open');
+    caret.className = 'fa-solid fa-caret-down tree-caret';
+    if (children.innerHTML) return;
+    children.innerHTML = '<div style="padding:6px 12px;font-size:0.75rem;color:#999"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
+    fetch('/api/db-manager/tables/' + dbName, { credentials: 'include' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.tables || data.tables.length === 0) { children.innerHTML = '<div class="pma-tree-empty">No tables</div>'; return; }
+        var html = '';
+        data.tables.forEach(function(t) {
+            html += '<div class="pma-tree-item pma-tree-sub">';
+            html += '<a href="/db-manager/' + dbName + '/browse/' + t + '" class="tree-link"><i class="fa-solid fa-table tree-icon-sm"></i> ' + t + '</a>';
+            html += '</div>';
+        });
+        children.innerHTML = html;
+    });
+}
+
+function showCreateDbModal() { new bootstrap.Modal(document.getElementById('createDbModal')).show(); }
+function createDb() {
+    var name = document.getElementById('newDbName').value.trim();
+    if (!name) return whpToast('Warning', 'Name required', 'warning');
+    fetch('/api/db-manager/create-db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ dbName: name }) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { if (d.success) { whpToast('Created', '', 'success'); setTimeout(function() { location.reload(); }, 500); } else whpToast('Error', d.error, 'error'); });
+}
+
+function confirmDropDb(name) {
+    whpConfirm('Drop?', 'Delete database <b>' + name + '</b>?', function() {
+        fetch('/api/db-manager/drop-db', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ dbName: name }) })
+        .then(function(r) { return r.json(); })
+        .then(function(d) { if (d.success) { whpToast('Dropped', '', 'success'); setTimeout(function() { location.reload(); }, 500); } else whpToast('Error', d.error, 'error'); });
+    });
+}
+
+function showCreateUserModal() {
+    document.getElementById('newDbUser').value = '';
+    document.getElementById('newDbPass').value = '';
+    document.getElementById('newDbHost').value = '%';
+    new bootstrap.Modal(document.getElementById('createUserModal')).show();
+}
+function togglePass() {
+    var inp = document.getElementById('newDbPass');
+    var eye = document.getElementById('passEye');
+    if (inp.type === 'password') { inp.type = 'text'; eye.className = 'fa-solid fa-eye-slash'; } else { inp.type = 'password'; eye.className = 'fa-solid fa-eye'; }
+}
+function createUser() {
+    var username = document.getElementById('newDbUser').value.trim();
+    var password = document.getElementById('newDbPass').value;
+    var host = document.getElementById('newDbHost').value.trim() || '%';
+    if (!username || !password) return whpToast('Warning', 'Username and password required', 'warning');
+    fetch('/api/db-manager/create-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username: username, password: password, host: host }) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) return whpToast('Error', d.error, 'error');
+        whpToast('User Created', '', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+        setTimeout(function() { location.reload(); }, 500);
+    });
+}
+
+function confirmDeleteUser(username, host) {
+    whpConfirm('Delete User?', 'Delete MySQL user <b>' + username + '@' + host + '</b>?', function() {
+        fetch('/api/db-manager/delete-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username: username, host: host }) })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.error) return whpToast('Error', d.error, 'error');
+            whpToast('Deleted', '', 'success');
+            setTimeout(function() { location.reload(); }, 500);
+        });
+    });
+}
+
+function showGrantModal(username, host) {
+    document.getElementById('grantUser').value = username + '@' + host;
+    new bootstrap.Modal(document.getElementById('grantModal')).show();
+}
+function doGrant() {
+    var parts = document.getElementById('grantUser').value.split('@');
+    var db = document.getElementById('grantDb').value;
+    fetch('/api/db-manager/grant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username: parts[0], database: db, host: parts[1] }) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) return whpToast('Error', d.error, 'error');
+        whpToast('Privileges Granted', '', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('grantModal')).hide();
+    });
+}
+
+function showPassModal(username, host) {
+    document.getElementById('passUser').value = username + '@' + host;
+    document.getElementById('newPassInput').value = '';
+    new bootstrap.Modal(document.getElementById('passModal')).show();
+}
+function doChangePass() {
+    var parts = document.getElementById('passUser').value.split('@');
+    var pass = document.getElementById('newPassInput').value;
+    if (!pass) return whpToast('Warning', 'Password required', 'warning');
+    fetch('/api/db-manager/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username: parts[0], host: parts[1], password: pass }) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.error) return whpToast('Error', d.error, 'error');
+        whpToast('Password Changed', '', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('passModal')).hide();
+    });
+}
+</script>

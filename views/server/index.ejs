@@ -1,0 +1,139 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Server Info</span></div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div><h1>Server Information</h1><p class="subtitle">Live resource utilization and server status overview.</p></div>
+    <button class="btn-ghost" onclick="refreshStats()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+  </div>
+
+  <div class="server-info-grid mb-3">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card-soft">
+        <div class="card-head">
+          <div><h3>System Info</h3><span class="head-sub">Hardware &amp; OS</span></div>
+        </div>
+        <div class="card-body">
+          <div class="info-row"><span class="ir-lbl"><i class="fa-solid fa-server"></i> Hostname</span><span class="ir-val"><%= system.hostname %></span></div>
+          <div class="info-row"><span class="ir-lbl"><i class="fa-solid fa-globe"></i> Main IP</span><span class="ir-val"><%= network.length > 0 ? network[0].address : '-' %></span></div>
+          <div class="info-row"><span class="ir-lbl"><i class="fa-brands fa-linux"></i> OS</span><span class="ir-val"><%= system.platform %> <%= system.release %></span></div>
+          <div class="info-row"><span class="ir-lbl"><i class="fa-solid fa-microchip"></i> CPU</span><span class="ir-val"><%= system.cpuCores %> cores · <%= system.cpuModel %></span></div>
+          <div class="info-row"><span class="ir-lbl"><i class="fa-solid fa-memory"></i> Memory</span><span class="ir-val"><%= memory.used %> / <%= memory.total %> (<%= memory.percent %>%)</span></div>
+          <div class="info-row"><span class="ir-lbl"><i class="fa-solid fa-hard-drive"></i> Disk</span><span class="ir-val"><%= disk.used %> / <%= disk.size %> (<%= disk.percent %>)</span></div>
+          <div class="info-row"><span class="ir-lbl"><i class="fa-solid fa-clock"></i> Uptime</span><span class="ir-val"><%= system.uptime %></span></div>
+          <div class="info-row"><span class="ir-lbl"><i class="fa-solid fa-gauge-high"></i> Load Avg</span><span class="ir-val"><%= system.loadAvg['1min'] %> / <%= system.loadAvg['5min'] %> / <%= system.loadAvg['15min'] %></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card-soft">
+        <div class="card-head"><h3>Resource Usage</h3><span class="head-sub">Live monitors</span></div>
+        <div class="card-body">
+          <div class="res-bar-item">
+            <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-microchip"></i> CPU</span><span class="val"><%= system.cpuCores %> cores</span></div>
+            <div class="res-bar"><div class="fill <%= parseFloat(system.loadAvg['1min']) / system.cpuCores * 100 > 80 ? 'red' : parseFloat(system.loadAvg['1min']) / system.cpuCores * 100 > 60 ? 'amber' : 'green' %>" style="width:<%= Math.min(parseFloat(system.loadAvg['1min']) / system.cpuCores * 100, 100) %>%"></div></div>
+          </div>
+          <div class="res-bar-item" style="margin-top:12px">
+            <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-memory"></i> RAM</span><span class="val"><%= memory.used %> / <%= memory.total %></span></div>
+            <div class="res-bar"><div class="fill <%= memory.percent > 80 ? 'red' : memory.percent > 60 ? 'amber' : 'green' %>" style="width:<%= memory.percent %>%"></div></div>
+          </div>
+          <div class="res-bar-item" style="margin-top:12px">
+            <div class="res-bar-head"><span class="lbl"><i class="fa-solid fa-hard-drive"></i> Disk</span><span class="val"><%= disk.used %> / <%= disk.size %></span></div>
+            <div class="res-bar"><div class="fill <%= parseInt(disk.percent) > 80 ? 'red' : parseInt(disk.percent) > 60 ? 'amber' : 'green' %>" style="width:<%= disk.percent %>"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-soft mb-3">
+    <div class="card-head"><h3>Services</h3></div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table-soft">
+          <thead><tr><th>Service</th><th>Status</th><th style="width:150px">Actions</th></tr></thead>
+          <tbody>
+            <% services.forEach(function(svc) { %>
+            <tr>
+              <td><strong><%= svc.name %></strong></td>
+              <td><span class="badge-soft <%= svc.running ? 'success' : 'danger' %>"><i class="fa-solid fa-circle"></i> <%= svc.running ? 'Running' : 'Stopped' %></span></td>
+              <td>
+                <% if (svc.startCmd) { %>
+                  <button class="btn-ghost" style="padding:3px 10px;font-size:0.75rem" onclick="toggleService('<%= svc.name %>', <%= !svc.running %>)"><i class="fa-solid fa-<%= svc.running ? 'stop' : 'play' %>"></i> <%= svc.running ? 'Stop' : 'Start' %></button>
+                <% } else { %>
+                  <span style="color:var(--text-muted);font-size:0.78rem">System service</span>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card-soft">
+        <div class="card-head"><h3>Network Interfaces</h3></div>
+        <div class="card-body p-0">
+          <table class="table-soft">
+            <thead><tr><th>Interface</th><th>IP Address</th><th>Netmask</th></tr></thead>
+            <tbody>
+              <% network.forEach(function(n) { %>
+              <tr>
+                <td><%= n.interface %></td>
+                <td><code style="font-size:0.78rem"><%= n.address %></code></td>
+                <td><%= n.netmask %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card-soft">
+        <div class="card-head"><h3>Top Processes</h3></div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table-soft">
+              <thead><tr><th>PID</th><th>User</th><th>CPU%</th><th>MEM%</th><th>Command</th></tr></thead>
+              <tbody>
+                <% processes.forEach(function(p) { %>
+                <tr>
+                  <td><%= p.pid %></td>
+                  <td><%= p.user %></td>
+                  <td><%= p.cpu %></td>
+                  <td><%= p.mem %></td>
+                  <td><small style="color:var(--text-muted)"><%= p.command.substring(0, 50) %><%= p.command.length > 50 ? '...' : '' %></small></td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function toggleService(name, start) {
+  var action = start ? 'Start' : 'Stop';
+  whpConfirm(action + ' ' + name + '?', 'Are you sure you want to ' + action.toLowerCase() + ' this service?', function() {
+    fetch('/api/server/' + (start ? 'restart' : 'stop'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        whpToast(name + ' ' + action.toLowerCase() + 'ed', '', 'success');
+        setTimeout(function() { location.reload(); }, 1000);
+      } else {
+        whpToast('Error', data.error, 'error');
+      }
+    })
+    .catch(function(err) { whpToast('Error', err.message, 'error'); });
+  });
+}
+
+function refreshStats() { window.location.reload(); }
+</script>

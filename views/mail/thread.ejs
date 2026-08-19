@@ -1,0 +1,301 @@
+<style>
+  .thread-container { max-width: 900px; }
+  .thread-email { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+  .thread-email.collapsed .thread-email-body { display: none; }
+  .thread-email-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; transition: background 0.15s; }
+  .thread-email-header:hover { background: var(--bg-hover); }
+  .thread-email-meta { flex: 1; min-width: 0; }
+  .thread-email-from { font-weight: 600; font-size: 0.9rem; color: var(--text-main); }
+  .thread-email-to { font-size: 0.78rem; color: var(--text-muted); }
+  .thread-email-date { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+  .thread-email-subject { font-size: 0.82rem; font-weight: 500; color: var(--text-main); padding: 0 16px 8px; display: none; }
+  .thread-email:not(:last-child) .thread-email-subject { display: none; }
+  .thread-email:last-child .thread-email-subject { display: block; }
+  .thread-email-body { padding: 0 16px 16px; border-top: 1px solid var(--border-soft); font-size: 0.88rem; line-height: 1.6; color: var(--text-main); }
+  .thread-email-body img { max-width: 100%; height: auto; }
+  .thread-email-body pre { background: var(--bg-hover); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.82rem; }
+  .thread-email-actions { display: flex; gap: 8px; padding: 8px 16px; border-top: 1px solid var(--border-soft); }
+  .thread-email-actions button, .thread-email-actions a { font-size: 0.78rem; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); cursor: pointer; text-decoration: none; transition: all 0.15s; }
+  .thread-email-actions button:hover, .thread-email-actions a:hover { background: var(--bg-hover); border-color: var(--primary); color: var(--primary); }
+  .thread-toggle { font-size: 0.7rem; color: var(--text-muted); margin-left: auto; }
+  .thread-email.collapsed .thread-email-body,
+  .thread-email.collapsed .thread-email-actions { display: none; }
+  .thread-email.collapsed .thread-toggle i { transform: rotate(-90deg); }
+  .inline-reply { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 8px; margin-top: 12px; overflow: hidden; display: none; }
+  .inline-reply.visible { display: block; }
+  .inline-reply-header { padding: 12px 16px; border-bottom: 1px solid var(--border-soft); font-weight: 600; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; }
+  .inline-reply-header button { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1rem; }
+  .inline-reply-body { padding: 12px 16px; }
+  .inline-reply-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .inline-reply-row label { font-size: 0.78rem; color: var(--text-muted); min-width: 45px; }
+  .inline-reply-row input { flex: 1; border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; font-size: 0.85rem; background: var(--bg-card); color: var(--text-main); }
+  .inline-reply-textarea { width: 100%; min-height: 120px; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-size: 0.85rem; font-family: inherit; resize: vertical; background: var(--bg-card); color: var(--text-main); }
+  .inline-reply-textarea:focus { outline: none; border-color: var(--primary); }
+  .inline-reply-footer { padding: 8px 16px 12px; display: flex; gap: 8px; justify-content: flex-end; }
+  .inline-reply-footer button { font-size: 0.82rem; padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); cursor: pointer; transition: all 0.15s; }
+  .inline-reply-footer .btn-send { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .inline-reply-footer .btn-send:hover { opacity: 0.9; }
+  .inline-reply-footer .btn-cancel:hover { background: var(--bg-hover); }
+</style>
+
+<div class="page-content">
+  <div class="breadcrumb-bar">
+    <a href="/dashboard">Home</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <a href="/webmail">Email</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <a href="/webmail">Inbox</a>
+    <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i>
+    <span>Thread</span>
+  </div>
+  <div class="page-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+    <div>
+      <h1><%= thread[0] ? (thread[0].subject || '(No Subject)') : 'Thread' %></h1>
+      <p class="subtitle"><%= thread.length %> message<%= thread.length !== 1 ? 's' : '' %> in this conversation</p>
+    </div>
+    <a class="btn-ghost" href="/webmail"><i class="fa-solid fa-arrow-left"></i> Back to Inbox</a>
+  </div>
+
+  <div class="mail-layout">
+    <div class="mail-side">
+      <a class="mail-compose-btn" href="/webmail/compose">
+        <i class="fa-solid fa-pen-to-square"></i> Compose
+      </a>
+      <a class="mail-folder" href="/webmail">
+        <i class="fa-solid fa-inbox"></i> Inbox <span class="mf-count"><%= unreadCount %></span>
+      </a>
+      <a class="mail-folder" href="/webmail?folder=starred">
+        <i class="fa-solid fa-star"></i> Starred
+      </a>
+      <a class="mail-folder" href="/webmail?folder=sent">
+        <i class="fa-solid fa-paper-plane"></i> Sent
+      </a>
+      <a class="mail-folder" href="/webmail?folder=spam">
+        <i class="fa-solid fa-circle-exclamation"></i> Spam
+      </a>
+      <a class="mail-folder" href="/webmail?folder=trash">
+        <i class="fa-solid fa-trash"></i> Trash
+      </a>
+    </div>
+    <div class="mail-main thread-container">
+      <div class="mail-read-actions" style="margin-bottom:12px">
+        <button class="btn-primary-soft" onclick="showReply()">
+          <i class="fa-solid fa-reply"></i> Reply
+        </button>
+        <button class="btn-ghost" onclick="expandAll()">
+          <i class="fa-solid fa-expand"></i> Expand All
+        </button>
+        <button class="btn-ghost" onclick="collapseAll()">
+          <i class="fa-solid fa-compress"></i> Collapse All
+        </button>
+      </div>
+
+      <% thread.forEach(function(email, idx) {
+        var isLast = idx === thread.length - 1;
+        var fromName = 'Unknown';
+        var fromAddress = '';
+        if (email.from) {
+          if (email.from.value && email.from.value.length > 0) {
+            fromName = email.from.value[0].name || email.from.value[0].address || 'Unknown';
+            fromAddress = email.from.value[0].address || '';
+          } else if (email.from.text) {
+            fromName = email.from.text;
+          }
+        }
+        var initials = fromName.split(/\s+/).map(function(w){ return w.charAt(0); }).join('').substring(0,2).toUpperCase();
+        var colors = ['av-blue','av-red','av-green','av-purple','av-orange','av-teal','av-pink','av-gray'];
+        var colorIdx = Math.abs(fromName.charCodeAt(0) + (fromName.charCodeAt(1) || 0)) % colors.length;
+        var dateStr = new Date(email.date).toLocaleString('id-ID', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+        var toList = '';
+        if (email.to) {
+          if (email.to.value) {
+            toList = email.to.value.map(function(t) { return t.address; }).join(', ');
+          } else {
+            toList = email.to.text || '';
+          }
+        }
+      %>
+        <div class="thread-email <%= !isLast ? 'collapsed' : '' %>" id="email-<%= email.uid %>">
+          <div class="thread-email-header" onclick="toggleEmail(<%= email.uid %>)">
+            <span class="mi-avatar <%= colors[colorIdx] %>" style="width:32px;height:32px;font-size:0.7rem"><%= initials %></span>
+            <div class="thread-email-meta">
+              <div class="thread-email-from"><%= fromName %></div>
+              <div class="thread-email-to">to: <%= toList || currentUser %></div>
+            </div>
+            <div class="thread-email-date"><%= dateStr %></div>
+            <span class="thread-toggle"><i class="fa-solid fa-chevron-down"></i></span>
+          </div>
+          <div class="thread-email-subject"><%= email.subject || '(No Subject)' %></div>
+          <div class="thread-email-body">
+            <% if (email.html) { %>
+              <iframe srcdoc="<%= email.html.replace(/"/g, '&quot;') %>" sandbox="allow-same-origin" style="width:100%;min-height:300px;border:none;background:#fff;"></iframe>
+            <% } else { %>
+              <pre style="white-space:pre-wrap;font-family:inherit;"><%= email.text || '' %></pre>
+            <% } %>
+            <% if (email.attachments && email.attachments.length > 0) { %>
+              <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft)">
+                <div style="font-size:0.82rem;font-weight:600;margin-bottom:8px"><i class="fa-solid fa-paperclip"></i> <%= email.attachments.length %> Attachment(s)</div>
+                <% email.attachments.forEach(function(att) { %>
+                  <a href="/api/mail/attachment/<%= email.uid %>/<%= encodeURIComponent(att.filename) %>" download style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--border-color);border-radius:4px;font-size:0.78rem;text-decoration:none;color:var(--text-main);margin-right:6px">
+                    <i class="fa-solid fa-file"></i> <%= att.filename %>
+                    <% if (att.size) { %> <span style="color:var(--text-muted)"><%= Math.round(att.size/1024) %> KB</span><% } %>
+                  </a>
+                <% }); %>
+              </div>
+            <% } %>
+          </div>
+          <div class="thread-email-actions">
+            <button onclick="showReply('<%= encodeURIComponent(fromAddress) %>')">
+              <i class="fa-solid fa-reply"></i> Reply
+            </button>
+            <a href="/webmail/compose?to=<%= encodeURIComponent(fromAddress) %>&subject=<%= encodeURIComponent(email.subject || '') %>">
+              <i class="fa-solid fa-share"></i> Forward
+            </a>
+            <button onclick="deleteEmail(<%= email.uid %>)">
+              <i class="fa-solid fa-trash"></i> Delete
+            </button>
+          </div>
+        </div>
+      <% }); %>
+
+      <div class="inline-reply" id="inlineReply">
+        <div class="inline-reply-header">
+          <span><i class="fa-solid fa-reply"></i> Reply</span>
+          <button onclick="hideReply()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="inline-reply-body">
+          <div class="inline-reply-row">
+            <label>To</label>
+            <input type="text" id="replyTo" value="<%= thread[0] && thread[0].from ? (thread[0].from.value ? thread[0].from.value[0].address : '') : '' %>" />
+          </div>
+          <div class="inline-reply-row">
+            <label>Subject</label>
+            <input type="text" id="replySubject" value="Re: <%= (thread[0] ? (thread[0].subject || '').replace(/^Re:\s*/i, '') : '') %>" />
+          </div>
+          <textarea class="inline-reply-textarea" id="replyBody" placeholder="Type your reply..."></textarea>
+          <div style="margin-top:8px;display:flex;align-items:center;gap:8px;font-size:0.82rem">
+            <i class="fa-solid fa-paperclip" style="color:var(--primary)"></i>
+            <a href="javascript:void(0)" onclick="document.getElementById('replyFileInput').click()" style="color:var(--primary)">Attach files</a>
+            <input type="file" id="replyFileInput" style="display:none" multiple onchange="handleReplyFiles(this)" />
+            <span id="replyFileLabel" style="color:var(--text-muted)">No files</span>
+          </div>
+        </div>
+        <div class="inline-reply-footer">
+          <button class="btn-cancel" onclick="hideReply()">Cancel</button>
+          <button class="btn-send" onclick="sendReply()"><i class="fa-solid fa-paper-plane"></i> Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleEmail(uid) {
+  var el = document.getElementById('email-' + uid);
+  if (el) el.classList.toggle('collapsed');
+}
+
+function expandAll() {
+  document.querySelectorAll('.thread-email').forEach(function(el) { el.classList.remove('collapsed'); });
+}
+
+function collapseAll() {
+  document.querySelectorAll('.thread-email').forEach(function(el, idx, arr) {
+    if (idx < arr.length - 1) el.classList.add('collapsed');
+  });
+}
+
+function showReply(to) {
+  var reply = document.getElementById('inlineReply');
+  if (to) document.getElementById('replyTo').value = decodeURIComponent(to);
+  reply.classList.add('visible');
+  document.getElementById('replyBody').focus();
+  reply.scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideReply() {
+  document.getElementById('inlineReply').classList.remove('visible');
+  document.getElementById('replyBody').value = '';
+  document.getElementById('replyFileInput').value = '';
+  document.getElementById('replyFileLabel').textContent = 'No files';
+}
+
+function handleReplyFiles(input) {
+  var label = document.getElementById('replyFileLabel');
+  if (input.files.length > 0) {
+    label.textContent = input.files.length + ' file(s)';
+  } else {
+    label.textContent = 'No files';
+  }
+}
+
+function sendReply() {
+  var to = document.getElementById('replyTo').value.trim();
+  var subject = document.getElementById('replySubject').value.trim();
+  var text = document.getElementById('replyBody').value.trim();
+
+  if (!to) return whpToast('Error', 'To is required', 'error');
+  if (!text) return whpToast('Error', 'Message cannot be empty', 'error');
+
+  var btn = document.querySelector('.btn-send');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+
+  var formData = new FormData();
+  formData.append('to', to);
+  formData.append('subject', subject);
+  formData.append('text', text);
+
+  var fileInput = document.getElementById('replyFileInput');
+  if (fileInput.files.length > 0) {
+    for (var i = 0; i < fileInput.files.length; i++) {
+      formData.append('attachments', fileInput.files[i]);
+    }
+  }
+
+  fetch('/api/mail/send', {
+    method: 'POST',
+    body: formData
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send';
+    if (data.success) {
+      whpToast('Sent', 'Reply sent successfully!', 'success');
+      hideReply();
+      setTimeout(function() { location.reload(); }, 1000);
+    } else {
+      whpToast('Error', data.error || 'Failed to send', 'error');
+    }
+  })
+  .catch(function() {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send';
+    whpToast('Error', 'Connection failed', 'error');
+  });
+}
+
+function deleteEmail(uid) {
+  whpConfirm('Delete Email?', 'This email will be permanently deleted.', function(confirmed) {
+    if (confirmed) {
+      fetch('/api/mail/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: uid })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.success) {
+          var el = document.getElementById('email-' + uid);
+          if (el) el.remove();
+          whpToast('Deleted', 'Email has been deleted.', 'success');
+          if (document.querySelectorAll('.thread-email').length === 0) {
+            window.location.href = '/webmail';
+          }
+        }
+      });
+    }
+  });
+}
+</script>

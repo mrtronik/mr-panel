@@ -1,0 +1,101 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper" style="flex-direction:column">
+    <div class="pma-nav">
+      <span class="pma-nav-title"><i class="fa-solid fa-link"></i> Parked Domains (Domain Aliases)</span>
+    </div>
+
+    <div class="pma-content">
+      <div class="pma-box">
+        <div class="pma-box-header">
+          <h3><i class="fa-solid fa-list"></i> Parked Domains (<%= parkedDomains.length %>)</h3>
+          <button class="btn btn-sm btn-primary" onclick="showAddModal()"><i class="fa-solid fa-plus"></i> Add</button>
+        </div>
+        <table class="pma-table">
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>Parked Domain</th>
+              <th>Points to</th>
+              <th style="width:80px">Status</th>
+              <th style="width:80px">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (parkedDomains.length === 0) { %>
+            <tr><td colspan="5" class="text-center text-muted p-4">No parked domains</td></tr>
+            <% } else { %>
+            <% parkedDomains.forEach(function(pd, i) { %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><span class="pma-db-link"><i class="fa-solid fa-link"></i> <%= pd.parked_domain %></span></td>
+              <td><%= pd.main_domain || '-' %></td>
+              <td><span class="badge-soft success">Active</span></td>
+              <td class="pma-actions">
+                <button class="btn btn-xs btn-outline btn-danger" onclick="removeParked(<%= pd.id %>)"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+            <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-plus"></i> Add Parked Domain</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Point to Website</label>
+          <select class="form-select" id="addWebsiteId">
+            <% websites.forEach(function(site) { %>
+            <option value="<%= site.id %>"><%= site.domain %></option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Domain Alias</label>
+          <input type="text" class="form-control" id="addParkedDomain" placeholder="example.net">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="createParked()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showAddModal() { new bootstrap.Modal(document.getElementById('addModal')).show(); }
+
+function createParked() {
+    var websiteId = document.getElementById('addWebsiteId').value;
+    var domain = document.getElementById('addParkedDomain').value.trim();
+    if (!domain) return whpToast('Warning', 'Domain required', 'warning');
+
+    fetch('/parked-domains', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+        body: JSON.stringify({ website_id: websiteId, parked_domain: domain })
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Created','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+
+function removeParked(id) {
+    whpConfirm('Delete?', 'Remove this parked domain?', function() {
+        fetch('/parked-domains/' + id, { method: 'DELETE', credentials: 'include' })
+        .then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Deleted','','success');setTimeout(function(){location.reload()},500)}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+</script>

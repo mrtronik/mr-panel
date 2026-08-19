@@ -1,0 +1,268 @@
+<link rel="stylesheet" href="/assets/css/db-manager.css">
+<main class="page-content">
+  <div class="pma-wrapper">
+    <!-- Left Sidebar -->
+    <div class="pma-sidebar">
+      <div class="pma-sidebar-header">
+        <a href="/db-manager" class="pma-breadcrumb"><i class="fa-solid fa-database"></i> <%= dbName %></a>
+      </div>
+      <div class="pma-tree">
+        <% tables.forEach(function(t) { %>
+        <div class="pma-tree-item">
+          <a href="/db-manager/<%= dbName %>/browse/<%= t %>" class="tree-link">
+            <i class="fa-solid fa-table tree-icon-sm"></i> <%= t %>
+          </a>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="pma-main">
+      <div class="pma-nav">
+        <span class="pma-nav-title"><i class="fa-solid fa-table"></i> <%= dbName %> <i class="fa-solid fa-angle-right" style="font-size:0.7em"></i> <%= tables.length %> tables</span>
+      </div>
+
+      <div class="pma-content">
+        <!-- Toolbar -->
+        <div class="pma-toolbar">
+          <button class="btn btn-sm btn-primary" onclick="showCreateTableModal()"><i class="fa-solid fa-plus"></i> New Table</button>
+          <button class="btn btn-sm btn-outline" id="btnEmptySelected" disabled onclick="bulkEmpty()"><i class="fa-solid fa-broom"></i> Empty</button>
+          <button class="btn btn-sm btn-outline btn-danger" id="btnDropSelected" disabled onclick="bulkDrop()"><i class="fa-solid fa-trash"></i> Drop</button>
+          <span class="pma-toolbar-sep"></span>
+          <span class="text-muted" style="font-size:0.78rem"><span id="selectedCount">0</span> selected</span>
+          <span class="pma-toolbar-spacer"></span>
+          <button class="btn btn-sm btn-outline" onclick="showImportModal()"><i class="fa-solid fa-upload"></i> Import</button>
+        </div>
+
+        <div class="pma-box">
+          <table class="pma-table">
+            <thead>
+              <tr>
+                <th style="width:30px"><input type="checkbox" class="form-check-input" id="checkAll" onclick="toggleAll(this)"></th>
+                <th style="width:40px">#</th>
+                <th>Table</th>
+                <th style="width:100px">Engine</th>
+                <th style="width:120px">Collation</th>
+                <th style="width:100px">Rows</th>
+                <th style="width:250px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (tables.length === 0) { %>
+              <tr><td colspan="7" class="text-center text-muted p-4">No tables found</td></tr>
+              <% } else { %>
+              <% tables.forEach(function(t, i) { %>
+              <tr>
+                <td><input type="checkbox" class="form-check-input table-check" value="<%= t %>" onchange="updateSelected()"></td>
+                <td><%= i + 1 %></td>
+                <td><a href="/db-manager/<%= dbName %>/browse/<%= t %>" class="pma-db-link"><i class="fa-solid fa-table"></i> <%= t %></a></td>
+                <td>InnoDB</td>
+                <td>utf8mb4</td>
+                <td>-</td>
+                <td class="pma-actions">
+                  <a href="/db-manager/<%= dbName %>/structure/<%= t %>" class="btn btn-xs btn-outline" title="Structure"><i class="fa-solid fa-columns"></i></a>
+                  <a href="/db-manager/<%= dbName %>/browse/<%= t %>" class="btn btn-xs btn-outline" title="Browse"><i class="fa-solid fa-eye"></i></a>
+                  <a href="/db-manager/<%= dbName %>/sql?table=<%= t %>" class="btn btn-xs btn-outline" title="SQL"><i class="fa-solid fa-terminal"></i></a>
+                  <a href="/db-manager/<%= dbName %>/export?table=<%= t %>" class="btn btn-xs btn-outline" title="Export"><i class="fa-solid fa-download"></i></a>
+                  <button class="btn btn-xs btn-outline btn-danger" title="Empty" onclick="emptyTable('<%= t %>')"><i class="fa-solid fa-broom"></i></button>
+                  <button class="btn btn-xs btn-outline btn-danger" title="Drop" onclick="dropTable('<%= t %>')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+              </tr>
+              <% }); %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Create Table Modal -->
+<div class="modal fade" id="createTableModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-plus"></i> Create Table — <code><%= dbName %></code></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Table name</label>
+          <input type="text" class="form-control" id="newTableName" placeholder="e.g. users">
+        </div>
+        <label class="form-label">Columns</label>
+        <div id="columnsContainer">
+          <div class="column-row">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-3"><input type="text" class="form-control form-control-sm" placeholder="Name" data-field="name"></div>
+              <div class="col-md-3">
+                <select class="form-select form-select-sm" data-field="type">
+                  <option>INT</option><option>BIGINT</option><option>VARCHAR</option><option>TEXT</option>
+                  <option>DATE</option><option>DATETIME</option><option>TIMESTAMP</option><option>BOOLEAN</option>
+                  <option>DECIMAL</option><option>FLOAT</option><option>DOUBLE</option><option>BLOB</option>
+                </select>
+              </div>
+              <div class="col-md-2"><input type="number" class="form-control form-control-sm" placeholder="Length" data-field="length" value="255"></div>
+              <div class="col-md-2">
+                <select class="form-select form-select-sm" data-field="nullable">
+                  <option value="NO">NOT NULL</option><option value="YES">NULL</option>
+                </select>
+              </div>
+              <div class="col-md-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" data-field="pri" id="colPri0">
+                  <label class="form-check-label" for="colPri0" style="font-size:0.7rem">PK</label>
+                </div>
+              </div>
+              <div class="col-md-1 text-end">
+                <button class="btn btn-xs btn-outline btn-danger" onclick="removeColumn(this)"><i class="fa-solid fa-times"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline mt-2" onclick="addColumn()"><i class="fa-solid fa-plus"></i> Add Column</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="createTable()">Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="fa-solid fa-upload"></i> Import SQL</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <label class="form-label">SQL file</label>
+        <input type="file" class="form-control" id="importFile" accept=".sql,.zip,.gz">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="doImport()">Import</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleAll(el) {
+    document.querySelectorAll('.table-check').forEach(function(c) { c.checked = el.checked; });
+    updateSelected();
+}
+function updateSelected() {
+    var checks = document.querySelectorAll('.table-check:checked');
+    document.getElementById('selectedCount').textContent = checks.length;
+    document.getElementById('btnEmptySelected').disabled = checks.length === 0;
+    document.getElementById('btnDropSelected').disabled = checks.length === 0;
+}
+function getSelected() {
+    return Array.from(document.querySelectorAll('.table-check:checked')).map(function(c) { return c.value; });
+}
+
+// Single actions
+function emptyTable(name) {
+    whpConfirm('Empty?', 'Truncate table <b>' + name + '</b>? All data will be lost.', function() {
+        fetch('/api/db-manager/empty-table', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+            body: JSON.stringify({ db: '<%= dbName %>', table: name })
+        }).then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Emptied','','success');setTimeout(function(){location.reload()},500)}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+function dropTable(name) {
+    whpConfirm('Drop?', 'Drop table <b>' + name + '</b>? This cannot be undone.', function() {
+        fetch('/api/db-manager/drop-table', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+            body: JSON.stringify({ db: '<%= dbName %>', table: name })
+        }).then(function(r){return r.json()}).then(function(d){
+            if(d.success){whpToast('Dropped','','success');setTimeout(function(){location.reload()},500)}
+            else whpToast('Error',d.error,'error');
+        });
+    });
+}
+
+// Bulk actions
+function bulkEmpty() {
+    var tables = getSelected();
+    if (!tables.length) return;
+    whpConfirm('Empty?', 'Truncate <b>' + tables.length + '</b> table(s)?', function() {
+        var done = 0, total = tables.length;
+        tables.forEach(function(t) {
+            fetch('/api/db-manager/empty-table', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+                body: JSON.stringify({ db: '<%= dbName %>', table: t })
+            }).then(function(r){return r.json()}).then(function(d) {
+                done++;
+                if (done === total) { whpToast('Done','','success'); setTimeout(function(){location.reload()},500); }
+            });
+        });
+    });
+}
+function bulkDrop() {
+    var tables = getSelected();
+    if (!tables.length) return;
+    whpConfirm('Drop?', 'Drop <b>' + tables.length + '</b> table(s)? This cannot be undone.', function() {
+        var done = 0, total = tables.length;
+        tables.forEach(function(t) {
+            fetch('/api/db-manager/drop-table', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+                body: JSON.stringify({ db: '<%= dbName %>', table: t })
+            }).then(function(r){return r.json()}).then(function(d) {
+                done++;
+                if (done === total) { whpToast('Done','','success'); setTimeout(function(){location.reload()},500); }
+            });
+        });
+    });
+}
+
+// Create table
+function showCreateTableModal() { new bootstrap.Modal(document.getElementById('createTableModal')).show(); }
+function addColumn() {
+    var tpl = document.querySelector('.column-row').cloneNode(true);
+    tpl.querySelectorAll('input,select').forEach(function(el) { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; el.checked = false; });
+    document.getElementById('columnsContainer').appendChild(tpl);
+}
+function removeColumn(btn) {
+    if (document.querySelectorAll('.column-row').length > 1) btn.closest('.column-row').remove();
+}
+function createTable() {
+    var name = document.getElementById('newTableName').value.trim();
+    if (!name) return whpToast('Warning','Table name required','warning');
+    var cols = [];
+    document.querySelectorAll('.column-row').forEach(function(row) {
+        var c = {};
+        row.querySelectorAll('[data-field]').forEach(function(el) { c[el.dataset.field] = el.type === 'checkbox' ? el.checked : el.value.trim(); });
+        if (c.name) {
+            var type = c.type;
+            if (['VARCHAR','DECIMAL'].includes(type) && c.length) type += '(' + c.length + ')';
+            else if (['INT','BIGINT'].includes(type)) type = type + '(11)';
+            cols.push({ name: c.name, type: type, nullable: c.nullable, key: c.pri ? 'PRI' : '', autoIncrement: c.pri });
+        }
+    });
+    if (!cols.length) return whpToast('Warning','Add at least one column','warning');
+    fetch('/api/db-manager/create-table', { method: 'POST', headers: {'Content-Type':'application/json'}, credentials: 'include',
+        body: JSON.stringify({ db: '<%= dbName %>', tableName: name, columns: cols })
+    }).then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Created','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+
+// Import
+function showImportModal() { new bootstrap.Modal(document.getElementById('importModal')).show(); }
+function doImport() {
+    var file = document.getElementById('importFile').files[0];
+    if (!file) return whpToast('Warning','Select a file','warning');
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('db', '<%= dbName %>');
+    fetch('/api/db-manager/import', { method: 'POST', credentials: 'include', body: fd })
+    .then(function(r){return r.json()}).then(function(d){
+        if(d.success){whpToast('Imported','','success');setTimeout(function(){location.reload()},500)}
+        else whpToast('Error',d.error,'error');
+    });
+}
+</script>

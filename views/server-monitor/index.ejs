@@ -1,0 +1,190 @@
+<main class="page-content">
+  <div class="breadcrumb-bar"><a href="/dashboard">Home</a> <i class="fa-solid fa-angle-right" style="font-size:0.6rem"></i> <span>Server Monitor</span></div>
+  <div class="page-header">
+    <h1><i class="fa-solid fa-chart-line"></i> Server Monitor</h1>
+    <p class="subtitle">Real-time server performance stats.</p>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card-soft p-3 text-center">
+        <div style="font-size:2rem;font-weight:700;color:var(--accent)" id="monCpu">--</div>
+        <div style="font-size:0.82rem;color:var(--text-muted)">CPU Usage</div>
+        <div style="font-size:0.72rem;color:var(--text-light)" id="monCpuModel"></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-soft p-3 text-center">
+        <div style="font-size:2rem;font-weight:700;color:var(--accent)" id="monRam">--</div>
+        <div style="font-size:0.82rem;color:var(--text-muted)">RAM Usage</div>
+        <div style="font-size:0.72rem;color:var(--text-light)" id="monRamDetail"></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-soft p-3 text-center">
+        <div style="font-size:2rem;font-weight:700;color:var(--accent)" id="monDisk">--</div>
+        <div style="font-size:0.82rem;color:var(--text-muted)">Disk Usage</div>
+        <div style="font-size:0.72rem;color:var(--text-light)" id="monDiskDetail"></div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-soft p-3 text-center">
+        <div style="font-size:2rem;font-weight:700;color:var(--accent)" id="monUptime">--</div>
+        <div style="font-size:0.82rem;color:var(--text-muted)">Uptime</div>
+        <div style="font-size:0.72rem;color:var(--text-light)" id="monLoad"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card-soft">
+        <div class="card-head"><h3><i class="fa-solid fa-chart-area"></i> CPU History</h3></div>
+        <div class="card-body">
+          <canvas id="cpuChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card-soft">
+        <div class="card-head"><h3><i class="fa-solid fa-chart-area"></i> RAM History</h3></div>
+        <div class="card-body">
+          <canvas id="ramChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card-soft">
+        <div class="card-head"><h3><i class="fa-solid fa-network-wired"></i> Network</h3></div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <span style="font-size:0.85rem"><i class="fa-solid fa-arrow-down" style="color:#22c55e"></i> RX: <strong id="monNetRx">0 B</strong></span>
+            <span style="font-size:0.85rem"><i class="fa-solid fa-arrow-up" style="color:#3b82f6"></i> TX: <strong id="monNetTx">0 B</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card-soft">
+        <div class="card-head"><h3><i class="fa-solid fa-server"></i> Services</h3></div>
+        <div class="card-body" id="servicesList" style="max-height:200px;overflow-y:auto">
+          <div style="text-align:center;color:var(--text-light)"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-soft">
+    <div class="card-head"><h3><i class="fa-solid fa-microchip"></i> Top Processes</h3></div>
+    <div class="card-body" style="overflow-x:auto">
+      <table class="table table-sm table-hover mb-0" style="font-size:0.82rem">
+        <thead><tr><th>User</th><th>PID</th><th>CPU%</th><th>RAM%</th><th>Command</th></tr></thead>
+        <tbody id="processList"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+var cpuData = [], ramData = [], labels = [];
+var maxPoints = 60;
+
+var cpuChart = new Chart(document.getElementById('cpuChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ label: 'CPU %', data: [], borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4, pointRadius: 0 }] },
+  options: { responsive: true, animation: false, scales: { y: { min: 0, max: 100, ticks: { callback: function(v){return v+'%'} } }, x: { display: false } }, plugins: { legend: { display: false } } }
+});
+
+var ramChart = new Chart(document.getElementById('ramChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ label: 'RAM %', data: [], borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.1)', fill: true, tension: 0.4, pointRadius: 0 }] },
+  options: { responsive: true, animation: false, scales: { y: { min: 0, max: 100, ticks: { callback: function(v){return v+'%'} } }, x: { display: false } }, plugins: { legend: { display: false } } }
+});
+
+function getBarColor(pct) {
+  if (pct > 90) return '#ef4444';
+  if (pct > 70) return '#f59e0b';
+  return '#22c55e';
+}
+
+function updateMonitor() {
+  fetch('/api/server-monitor/stats', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    if (!d.success) return;
+
+    // Stats cards
+    document.getElementById('monCpu').textContent = d.cpu.percent + '%';
+    document.getElementById('monCpu').style.color = getBarColor(d.cpu.percent);
+    document.getElementById('monCpuModel').textContent = d.cpu.cores + ' cores';
+
+    document.getElementById('monRam').textContent = d.ram.percent + '%';
+    document.getElementById('monRam').style.color = getBarColor(d.ram.percent);
+    document.getElementById('monRamDetail').textContent = d.ram.usedFormatted + ' / ' + d.ram.totalFormatted;
+
+    document.getElementById('monDisk').textContent = d.disk.percent + '%';
+    document.getElementById('monDisk').style.color = getBarColor(d.disk.percent);
+    document.getElementById('monDiskDetail').textContent = d.disk.usedFormatted + ' / ' + d.disk.totalFormatted;
+
+    document.getElementById('monUptime').textContent = d.uptime.formatted;
+    document.getElementById('monLoad').textContent = 'Load: ' + d.load['1m'] + ' / ' + d.load['5m'] + ' / ' + d.load['15m'];
+
+    document.getElementById('monNetRx').textContent = d.network.rxFormatted;
+    document.getElementById('monNetTx').textContent = d.network.txFormatted;
+
+    // Charts
+    var now = new Date().toLocaleTimeString();
+    cpuData.push(d.cpu.percent);
+    ramData.push(d.ram.percent);
+    labels.push(now);
+    if (cpuData.length > maxPoints) { cpuData.shift(); ramData.shift(); labels.shift(); }
+
+    cpuChart.data.labels = labels;
+    cpuChart.data.datasets[0].data = cpuData;
+    cpuChart.update();
+
+    ramChart.data.labels = labels;
+    ramChart.data.datasets[0].data = ramData;
+    ramChart.update();
+  }).catch(function(){});
+}
+
+function loadServices() {
+  fetch('/api/server-monitor/services', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    if (!d.success) return;
+    var html = '';
+    d.services.forEach(function(s) {
+      var color = s.status === 'running' ? '#22c55e' : s.status === 'stopped' ? '#ef4444' : '#9ca3af';
+      var icon = s.status === 'running' ? 'fa-circle-check' : s.status === 'stopped' ? 'fa-circle-xmark' : 'fa-circle-question';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-soft)">';
+      html += '<span style="font-size:0.82rem">' + s.name + '</span>';
+      html += '<span style="font-size:0.75rem;color:' + color + '"><i class="fa-solid ' + icon + '"></i> ' + s.status + '</span>';
+      html += '</div>';
+    });
+    document.getElementById('servicesList').innerHTML = html;
+  }).catch(function(){});
+}
+
+function loadProcesses() {
+  fetch('/api/server-monitor/processes', {credentials:'include'})
+  .then(function(r){return r.json()}).then(function(d){
+    if (!d.success) return;
+    var html = '';
+    d.processes.forEach(function(p) {
+      html += '<tr><td>' + p.user + '</td><td>' + p.pid + '</td><td>' + p.cpu + '%</td><td>' + p.mem + '%</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + p.command + '</td></tr>';
+    });
+    document.getElementById('processList').innerHTML = html;
+  }).catch(function(){});
+}
+
+updateMonitor();
+loadServices();
+loadProcesses();
+setInterval(updateMonitor, 3000);
+setInterval(loadServices, 15000);
+setInterval(loadProcesses, 5000);
+</script>
