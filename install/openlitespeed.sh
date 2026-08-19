@@ -230,6 +230,14 @@ else
     sukses "WebServer sudah Aktif"
 fi
 
+# ─── Ensure lsadm user exists ─────────────────
+if ! id lsadm &>/dev/null; then
+    useradd -r -s /bin/false -d /nonexistent lsadm 2>/dev/null || true
+fi
+if ! getent group nogroup &>/dev/null; then
+    groupadd -f nogroup 2>/dev/null || true
+fi
+
 
 # ─── Start OpenLiteSpeed ───────────────────────
 proses "Menjalankan WebServer..."
@@ -300,10 +308,11 @@ chown -R lsadm:nogroup /usr/local/lsws/conf/vhosts/Example
 
 # ─── OpenDKIM for email authentication ────────
 proses "Menginstall OpenDKIM..."
-apt-get install -y opendkim opendkim-tools >> "$LOG_FILE" 2>&1
+apt-get install -y opendkim opendkim-tools >> "$LOG_FILE" 2>&1 || warn "OpenDKIM tidak tersedia di repository"
 
-mkdir -p /etc/opendkim/keys
-cat > /etc/opendkim.conf << 'OPENDKIM_CONF'
+if command -v opendkim &>/dev/null; then
+    mkdir -p /etc/opendkim/keys
+    cat > /etc/opendkim.conf << 'OPENDKIM_CONF'
 AutoRestart          Yes
 AutoRestartRate      10/1M
 Background           Yes
@@ -324,28 +333,31 @@ UMask                007
 UserID               opendkim:opendkim
 OPENDKIM_CONF
 
-cat > /etc/opendkim/TrustedHosts << 'EOF'
+    cat > /etc/opendkim/TrustedHosts << 'EOF'
 127.0.0.1
 localhost
 EOF
 
-touch /etc/opendkim/KeyTable
-touch /etc/opendkim/SigningTable
+    touch /etc/opendkim/KeyTable
+    touch /etc/opendkim/SigningTable
 
-chown -R opendkim:opendkim /etc/opendkim
-systemctl enable opendkim
-systemctl start opendkim
+    chown -R opendkim:opendkim /etc/opendkim 2>/dev/null || true
+    systemctl enable opendkim 2>/dev/null || true
+    systemctl start opendkim 2>/dev/null || true
 
-# Configure Postfix for DKIM signing (only if Postfix is installed)
-if command -v postconf &>/dev/null; then
-    postconf -e "milter_default_action = accept"
-    postconf -e "milter_protocol = 6"
-    postconf -e "smtpd_milters = inet:localhost:8891"
-    postconf -e "non_smtpd_milters = inet:localhost:8891"
-    systemctl restart postfix 2>/dev/null || true
-    sukses "OpenDKIM installed and configured"
+    # Configure Postfix for DKIM signing (only if Postfix is installed)
+    if command -v postconf &>/dev/null; then
+        postconf -e "milter_default_action = accept"
+        postconf -e "milter_protocol = 6"
+        postconf -e "smtpd_milters = inet:localhost:8891"
+        postconf -e "non_smtpd_milters = inet:localhost:8891"
+        systemctl restart postfix 2>/dev/null || true
+        sukses "OpenDKIM installed and configured"
+    else
+        sukses "OpenDKIM installed (Postfix not found — configure manually)"
+    fi
 else
-    sukses "OpenDKIM installed (Postfix not found — configure manually)"
+    warn "OpenDKIM skipped (package tidak tersedia)"
 fi
 
 echo ""
