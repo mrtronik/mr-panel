@@ -56,21 +56,21 @@ sukses "Konfigurasi MariaDB selesai, tersimpan di /root/.my.cnf "
 
 # ─── Secure installation ──────────────────────
 proses "Menyiapkan keamanan MariaDB..."
-mysql -u root -p"${MYSQL_ROOT_PASS}" -e "
+mysql_exec "" "
     DELETE FROM mysql.user WHERE User='';
     DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
     DROP DATABASE IF EXISTS test;
     DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
     FLUSH PRIVILEGES;
-" >> "$LOG_FILE" 2>&1 || warn "Some secure steps skipped"
+" || warn "Some secure steps skipped"
 sukses "MariaDB Aktif"
 
 # ─── Create MR Panel database ─────────────────
 proses "Membuat database MR Panel..."
-mysql -u root -p"${MYSQL_ROOT_PASS}" -e "
+mysql_exec "" "
     CREATE DATABASE IF NOT EXISTS mrpanel CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
     FLUSH PRIVILEGES;
-" >> "$LOG_FILE" 2>&1
+"
 sukses "Database berhasil dibuat"
 
 # ─── Bind to 127.0.0.1 only ──────────────────

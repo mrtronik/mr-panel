@@ -84,12 +84,12 @@ systemctl start mariadb >> "$LOG_FILE" 2>&1 || systemctl start mysql >> "$LOG_FI
 sleep 2
 
 # Create PowerDNS MySQL database and schema
-mysql -u root -p"${MYSQL_ROOT_PASS}" -e "
+mysql_exec "" "
     CREATE DATABASE IF NOT EXISTS powerdns CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-" >> "$LOG_FILE" 2>&1 || { error "Gagal koneksi MySQL. Pastikan MariaDB running dan password root benar."; }
+" || { error "Gagal koneksi MySQL. Pastikan MariaDB running."; }
 
 # Create tables using IF NOT EXISTS
-mysql -u root -p"${MYSQL_ROOT_PASS}" powerdns -e "
+mysql_exec "powerdns" "
     CREATE TABLE IF NOT EXISTS domains (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,

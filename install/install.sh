@@ -50,6 +50,26 @@ warn() {
     printf  "\r\033[K${KUNING} [!]${NC} $1\n"
     echo "[!] $1" >> "$LOG_FILE"
 }
+
+# ─── MySQL helper: try password first, fallback to socket ──
+mysql_exec() {
+    local db="$1"
+    shift
+    local query="$*"
+    # Try with password first
+    if mysql -u root -p"${MYSQL_ROOT_PASS}" ${db:+$db} -e "$query" >> "$LOG_FILE" 2>&1; then
+        return 0
+    fi
+    # Fallback: socket auth (no password)
+    if mysql -u root ${db:+$db} -e "$query" >> "$LOG_FILE" 2>&1; then
+        # If socket works but password doesn't, set the password
+        mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASS}'; FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || \
+        mysql -u root -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${MYSQL_ROOT_PASS}'); FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || true
+        return 0
+    fi
+    return 1
+}
+
 banner() {
     clear
 
