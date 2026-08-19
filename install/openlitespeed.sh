@@ -211,8 +211,8 @@ chown -R pdns:pdns /etc/powerdns >> "$LOG_FILE" 2>&1 || true
 chmod 640 /etc/powerdns/pdns.conf >> "$LOG_FILE" 2>&1 || true
 
 # Start PowerDNS
-systemctl enable pdns >> "$LOG_FILE" 2>&1
-systemctl restart pdns >> "$LOG_FILE" 2>&1
+systemctl enable pdns >> "$LOG_FILE" 2>&1 || true
+systemctl restart pdns >> "$LOG_FILE" 2>&1 || warn "PowerDNS gagal start (bisa di-fix nanti)"
 sukses "PowerDNS dikonfigurasi dan dijalankan (API: port 8081)"
 
 
