@@ -79,10 +79,14 @@ proses "Mengkonfigurasi PowerDNS..."
 # Stop PowerDNS first
 systemctl stop pdns >> "$LOG_FILE" 2>&1 || true
 
+# Ensure MariaDB is running
+systemctl start mariadb >> "$LOG_FILE" 2>&1 || systemctl start mysql >> "$LOG_FILE" 2>&1 || true
+sleep 2
+
 # Create PowerDNS MySQL database and schema
 mysql -u root -p"${MYSQL_ROOT_PASS}" -e "
     CREATE DATABASE IF NOT EXISTS powerdns CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-" >> "$LOG_FILE" 2>&1
+" >> "$LOG_FILE" 2>&1 || { error "Gagal koneksi MySQL. Pastikan MariaDB running dan password root benar."; }
 
 # Create tables using IF NOT EXISTS
 mysql -u root -p"${MYSQL_ROOT_PASS}" powerdns -e "
@@ -159,7 +163,7 @@ mysql -u root -p"${MYSQL_ROOT_PASS}" powerdns -e "
         KEY domain_id (domain_id),
         CONSTRAINT comments_domain_id FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-" >> "$LOG_FILE" 2>&1
+" >> "$LOG_FILE" 2>&1 || { error "Gagal membuat tabel PowerDNS di MySQL."; }
 sukses "PowerDNS database schema ready"
 
 # Write pdns.conf

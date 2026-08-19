@@ -18,15 +18,32 @@ fi
 proses "Mengaktifkan MariaDB..."
 systemctl enable mariadb >> "$LOG_FILE" 2>&1
 systemctl start mariadb >> "$LOG_FILE" 2>&1
+sleep 2
 sukses "Layanan MariaDB Aktif"
 
-# ─── Set root password ────────────────────────
-proses "Menyiapkan password root MariaDB..."
+# ─── Detect MySQL root auth ──────────────────
+proses "Mendeteksi autentikasi MySQL root..."
+MYSQL_AUTH_MODE="socket"
 
-mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASS}'; FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || \
-mysql -u root -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${MYSQL_ROOT_PASS}'); FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || \
-
-error "Could not set root password (may already be set)"
+# Test if root can connect without password (socket auth)
+if mysql -u root -e "SELECT 1" >> "$LOG_FILE" 2>&1; then
+    MYSQL_AUTH_MODE="socket"
+    sukses "MySQL root: socket auth (tanpa password)"
+    # Set password for panel use
+    mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASS}'; FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || \
+    mysql -u root -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${MYSQL_ROOT_PASS}'); FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || \
+    warn "Gagal set password root, lanjut dengan socket auth"
+    # Test with password
+    if mysql -u root -p"${MYSQL_ROOT_PASS}" -e "SELECT 1" >> "$LOG_FILE" 2>&1; then
+        MYSQL_AUTH_MODE="password"
+    fi
+# Test if root can connect with generated password
+elif mysql -u root -p"${MYSQL_ROOT_PASS}" -e "SELECT 1" >> "$LOG_FILE" 2>&1; then
+    MYSQL_AUTH_MODE="password"
+    sukses "MySQL root: password auth (sudah terkonfigurasi)"
+else
+    error "Tidak bisa koneksi MySQL root. Coba: mysql -u root"
+fi
 
 # ─── Create .my.cnf for root ─────────────────
 cat > /root/.my.cnf << EOF
@@ -36,7 +53,6 @@ password=${MYSQL_ROOT_PASS}
 EOF
 chmod 600 /root/.my.cnf
 sukses "Konfigurasi MariaDB selesai, tersimpan di /root/.my.cnf "
- 
 
 # ─── Secure installation ──────────────────────
 proses "Menyiapkan keamanan MariaDB..."
@@ -61,7 +77,6 @@ sukses "Database berhasil dibuat"
 if ! grep -q "bind-address.*127.0.0.1" /etc/mysql/mariadb.conf.d/50-server.cnf 2>/dev/null; then
     sed -i 's/^bind-address\s*=.*/bind-address = 127.0.0.1/' /etc/mysql/mariadb.conf.d/50-server.cnf 2>/dev/null || true
     systemctl restart mariadb >> "$LOG_FILE" 2>&1
-    #log "MariaDB bound to 127.0.0.1"
 fi
 
 echo ""
