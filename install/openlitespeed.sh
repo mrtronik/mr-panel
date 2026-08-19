@@ -43,7 +43,7 @@ else
     else
         IONCUBE_URL="https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"
     fi
-    if wget -q "$IONCUBE_URL" >> "$LOG_FILE" 2>&1 && \
+    if wget --timeout=10 --tries=1 -q "$IONCUBE_URL" >> "$LOG_FILE" 2>&1 && \
        tar xzf ioncube_loaders_lin_*.tar.gz >> "$LOG_FILE" 2>&1 && \
        [ -n "$PHP_EXT_DIR" ]; then
         cp ioncube/ioncube_loader_lin_${PHP_VER}.so "$PHP_EXT_DIR/" 2>/dev/null || true
