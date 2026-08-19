@@ -43,19 +43,21 @@ else
     else
         IONCUBE_URL="https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz"
     fi
-    wget -q "$IONCUBE_URL" >> "$LOG_FILE" 2>&1
-    tar xzf ioncube_loaders_lin_*.tar.gz >> "$LOG_FILE" 2>&1
-    cp ioncube/ioncube_loader_lin_${PHP_VER}.so "$PHP_EXT_DIR/" 2>/dev/null
-
-    for ini in /etc/php/*/fpm/php.ini /etc/php/*/cli/php.ini; do
-        if [ -f "$ini" ] && ! grep -q "ioncube_loader" "$ini" 2>/dev/null; then
-            sed -i "1i zend_extension=ioncube_loader_lin_${PHP_VER}.so" "$ini"
-        fi
-    done
-
+    if wget -q "$IONCUBE_URL" >> "$LOG_FILE" 2>&1 && \
+       tar xzf ioncube_loaders_lin_*.tar.gz >> "$LOG_FILE" 2>&1 && \
+       [ -n "$PHP_EXT_DIR" ]; then
+        cp ioncube/ioncube_loader_lin_${PHP_VER}.so "$PHP_EXT_DIR/" 2>/dev/null || true
+        for ini in /etc/php/*/fpm/php.ini /etc/php/*/cli/php.ini; do
+            if [ -f "$ini" ] && ! grep -q "ioncube_loader" "$ini" 2>/dev/null; then
+                sed -i "1i zend_extension=ioncube_loader_lin_${PHP_VER}.so" "$ini"
+            fi
+        done
+        systemctl restart php${PHP_VER}-fpm 2>/dev/null || true
+        sukses "ionCube Loader installed (PHP ${PHP_VER})"
+    else
+        sukses "ionCube Loader skipped (download gagal, bisa diinstall manual nanti)"
+    fi
     rm -rf /tmp/ioncube*
-    systemctl restart php${PHP_VER}-fpm 2>/dev/null || true
-    sukses "ionCube Loader installed (PHP ${PHP_VER})"
 fi
 
 
