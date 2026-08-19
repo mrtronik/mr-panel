@@ -51,20 +51,20 @@ warn() {
     echo "[!] $1" >> "$LOG_FILE"
 }
 
-# ─── MySQL helper: try password first, fallback to socket ──
+# ─── MySQL helper: try socket first, then password ──
 mysql_exec() {
     local db="$1"
     shift
     local query="$*"
-    # Try with password first
-    if mysql -u root -p"${MYSQL_ROOT_PASS}" ${db:+$db} -e "$query" >> "$LOG_FILE" 2>&1; then
-        return 0
-    fi
-    # Fallback: socket auth (no password)
+    # Try socket auth first (works on most NAT VPS)
     if mysql -u root ${db:+$db} -e "$query" >> "$LOG_FILE" 2>&1; then
-        # If socket works but password doesn't, set the password
+        # Socket works, ensure password is also set
         mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASS}'; FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || \
         mysql -u root -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${MYSQL_ROOT_PASS}'); FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || true
+        return 0
+    fi
+    # Fallback: password auth
+    if mysql -u root -p"${MYSQL_ROOT_PASS}" ${db:+$db} -e "$query" >> "$LOG_FILE" 2>&1; then
         return 0
     fi
     return 1

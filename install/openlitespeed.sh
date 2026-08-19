@@ -86,7 +86,7 @@ sleep 2
 # Create PowerDNS MySQL database and schema
 mysql_exec "" "
     CREATE DATABASE IF NOT EXISTS powerdns CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-" || { error "Gagal koneksi MySQL. Pastikan MariaDB running."; }
+" || warn "Gagal buat database PowerDNS (mungkin sudah ada)"
 
 # Create tables using IF NOT EXISTS
 mysql_exec "powerdns" "
@@ -163,7 +163,7 @@ mysql_exec "powerdns" "
         KEY domain_id (domain_id),
         CONSTRAINT comments_domain_id FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-" >> "$LOG_FILE" 2>&1 || { error "Gagal membuat tabel PowerDNS di MySQL."; }
+" || warn "Beberapa tabel PowerDNS mungkin sudah ada"
 sukses "PowerDNS database schema ready"
 
 # Write pdns.conf

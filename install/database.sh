@@ -23,23 +23,16 @@ sukses "Layanan MariaDB Aktif"
 
 # ─── Detect MySQL root auth ──────────────────
 proses "Mendeteksi autentikasi MySQL root..."
-MYSQL_AUTH_MODE="socket"
 
 # Test if root can connect without password (socket auth)
 if mysql -u root -e "SELECT 1" >> "$LOG_FILE" 2>&1; then
-    MYSQL_AUTH_MODE="socket"
     sukses "MySQL root: socket auth (tanpa password)"
-    # Set password for panel use
+    # Try to set password for panel use
     mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASS}'; FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || \
     mysql -u root -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${MYSQL_ROOT_PASS}'); FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1 || \
-    warn "Gagal set password root, lanjut dengan socket auth"
-    # Test with password
-    if mysql -u root -p"${MYSQL_ROOT_PASS}" -e "SELECT 1" >> "$LOG_FILE" 2>&1; then
-        MYSQL_AUTH_MODE="password"
-    fi
+    warn "Gagal set password root, panel akan pakai socket auth"
 # Test if root can connect with generated password
 elif mysql -u root -p"${MYSQL_ROOT_PASS}" -e "SELECT 1" >> "$LOG_FILE" 2>&1; then
-    MYSQL_AUTH_MODE="password"
     sukses "MySQL root: password auth (sudah terkonfigurasi)"
 else
     error "Tidak bisa koneksi MySQL root. Coba: mysql -u root"
